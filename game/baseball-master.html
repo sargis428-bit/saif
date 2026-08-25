@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Baseball: 10-Level World Tour Edition</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-arcade {
+            font-family: 'Press Start 2P', monospace;
+        }
+        .font-tech {
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        /* Vintage Monochrome mode filter for Level 10 */
+        .monochrome-mode {
+            filter: sepia(0.65) contrast(1.25) grayscale(0.8);
+        }
+
+        /* Glassmorphism containers */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* Directional D-Pad Button animations */
+        .zone-btn {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .zone-btn:active, .zone-btn.active-key {
+            transform: scale(0.92);
+            filter: brightness(1.4);
+        }
+
+        /* Pulsing Pitch Alert Banner */
+        @keyframes pitchPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.03); }
+        }
+        .animate-pitch-alert {
+            animation: pitchPulse 0.8s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between overflow-x-hidden selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- Top Navigation Header -->
+    <header class="w-full bg-slate-900/90 border-b border-slate-800 px-4 py-3 sticky top-0 z-40 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="showLevelSelect()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-red-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid font-bold text-slate-950 text-xl fa-baseball"></i>
+                </div>
+                <div>
+                    <h1 class="font-tech text-lg font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-red-400 to-amber-200">
+                        ARCADE BASEBALL
+                    </h1>
+                    <p class="text-xs text-amber-400/80 font-semibold tracking-widest uppercase">10-Level World Tour</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Action Buttons -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="toggleAudio()" id="audio-btn" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700" title="Toggle Sound">
+                    <i class="fa-solid fa-volume-high" id="audio-icon"></i>
+                </button>
+                <button onclick="showInstructions()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700" title="How to Play">
+                    <i class="fa-solid fa-circle-question"></i>
+                </button>
+                <button onclick="showLevelSelect()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs sm:text-sm tracking-wide transition-all shadow-md flex items-center space-x-2">
+                    <i class="fa-solid fa-map"></i>
+                    <span class="hidden sm:inline">Tour Map</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto p-2 sm:p-4 flex flex-col items-center justify-center relative">
+        
+        <!-- ================= LEVEL SELECTOR OVERLAY ================= -->
+        <div id="level-select-screen" class="w-full glass-panel rounded-3xl p-4 sm:p-8 shadow-2xl z-30 transition-all duration-300">
+            <div class="text-center mb-6">
+                <span class="inline-block px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-xs font-bold tracking-widest uppercase mb-2">
+                    Campaign Mode
+                </span>
+                <h2 class="font-tech text-2xl sm:text-4xl font-extrabold text-white">Select Destination</h2>
+                <p class="text-slate-400 text-sm mt-1">Conquer all 10 stadiums across North America, Europe, and Retro History!</p>
+            </div>
+
+            <!-- Resume Active Game Banner (Injected dynamically if game is paused) -->
+            <div id="resume-banner-container" class="mb-4"></div>
+
+            <!-- Level Cards Grid -->
+            <div id="levels-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 max-h-[60vh] overflow-y-auto p-1">
+                <!-- Dynamically injected via JavaScript -->
+            </div>
+        </div>
+
+        <!-- ================= MAIN ARCADE STADIUM GAMEPLAY VIEW ================= -->
+        <div id="gameplay-screen" class="hidden w-full flex flex-col items-center">
+            
+            <!-- Stadium HUD Header -->
+            <div class="w-full glass-panel rounded-2xl p-3 sm:p-4 mb-3 flex flex-wrap items-center justify-between gap-2 border border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div id="hud-flag" class="text-2xl sm:text-3xl">🇺🇸</div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span id="hud-level-num" class="font-arcade text-xs text-amber-400">LVL 1</span>
+                            <h3 id="hud-venue-name" class="font-bold text-sm sm:text-base text-white">Local Sandlot</h3>
+                        </div>
+                        <p id="hud-pitcher" class="text-xs text-slate-400">vs Pitcher Bot</p>
+                    </div>
+                </div>
+
+                <!-- HUD Stats Badges -->
+                <div class="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm">
+                    <div class="bg-slate-900/90 border border-slate-700/80 px-3 py-1.5 rounded-xl text-center">
+                        <span class="text-slate-400 block text-[10px] font-bold uppercase">Target Score</span>
+                        <span id="hud-target-score" class="font-tech text-amber-400 font-bold text-sm">100 PTS</span>
+                    </div>
+                    <div class="bg-slate-900/90 border border-slate-700/80 px-3 py-1.5 rounded-xl text-center">
+                        <span class="text-slate-400 block text-[10px] font-bold uppercase">Current Score</span>
+                        <span id="hud-score" class="font-tech text-emerald-400 font-bold text-sm sm:text-base">0</span>
+                    </div>
+                    <div class="bg-slate-900/90 border border-slate-700/80 px-3 py-1.5 rounded-xl text-center">
+                        <span class="text-slate-400 block text-[10px] font-bold uppercase">Swings Left</span>
+                        <span id="hud-swings" class="font-tech text-red-400 font-bold text-sm sm:text-base">5</span>
+                    </div>
+                    <div class="bg-slate-900/90 border border-slate-700/80 px-3 py-1.5 rounded-xl text-center hidden sm:block">
+                        <span class="text-slate-400 block text-[10px] font-bold uppercase">HR Streak</span>
+                        <span id="hud-streak" class="font-tech text-purple-400 font-bold text-sm">0 🔥</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div id="canvas-container" class="relative w-full max-w-[850px] aspect-[16/10] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-700">
+                <!-- Explicit Canvas Resolution (800x500) -->
+                <canvas id="pitchCanvas" width="800" height="500" class="w-full h-full block cursor-pointer"></canvas>
+
+                <!-- Dynamic Top-Left Points Toast Notification -->
+                <div id="top-left-score-toast" class="absolute top-4 left-4 z-20 pointer-events-none transition-all duration-300 opacity-0 transform -translate-y-2">
+                    <div id="toast-card" class="bg-slate-950/90 border-2 border-emerald-400/80 px-4 py-2.5 rounded-2xl backdrop-blur-md shadow-2xl flex items-center space-x-3">
+                        <div id="toast-icon" class="text-2xl sm:text-3xl">💥</div>
+                        <div>
+                            <div id="toast-pts" class="font-tech text-emerald-400 font-black text-base sm:text-xl tracking-wide">+350 PTS</div>
+                            <div id="toast-detail" class="text-[10px] text-amber-300 font-bold uppercase tracking-widest">HOME RUN! (380 ft)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Floating Canvas Notification / Pitch Status Indicator -->
+                <div id="pitch-alert-overlay" class="absolute top-4 right-4 z-20 pointer-events-none">
+                    <div id="pitch-status-badge" class="px-4 py-2 rounded-xl bg-slate-950/90 border-2 border-amber-400/80 shadow-lg text-center backdrop-blur-md animate-pitch-alert">
+                        <span id="pitch-status-text" class="font-tech text-sm sm:text-base font-black text-amber-300 tracking-wider uppercase block">
+                            ⏳ GET READY...
+                        </span>
+                        <span id="pitch-type-text" class="text-[10px] font-bold text-slate-300 uppercase tracking-widest block">
+                            Fastball Incoming
+                        </span>
+                    </div>
+                </div>
+
+                <!-- In-Game On-Screen Control Zone Guidance / Touch Pad Overlay -->
+                <div class="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 flex flex-col items-center scale-90 sm:scale-100">
+                    <span class="text-[10px] text-amber-300 font-bold tracking-widest uppercase mb-1 drop-shadow-md">4 Strike Zones</span>
+                    <div class="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-2 rounded-2xl border border-slate-700/80 backdrop-blur-md">
+                        <div></div>
+                        <button onclick="triggerSwing(1)" id="btn-zone-1" class="zone-btn w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/20 border border-amber-400/50 hover:bg-amber-500/40 text-amber-300 font-black text-sm flex flex-col items-center justify-center">
+                            <i class="fa-solid fa-arrow-up text-xs"></i>
+                            <span class="text-[9px]">TOP (W)</span>
+                        </button>
+                        <div></div>
+                        <button onclick="triggerSwing(2)" id="btn-zone-2" class="zone-btn w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/20 border border-amber-400/50 hover:bg-amber-500/40 text-amber-300 font-black text-sm flex flex-col items-center justify-center">
+                            <i class="fa-solid fa-arrow-left text-xs"></i>
+                            <span class="text-[9px]">LFT (A)</span>
+                        </button>
+                        <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-center text-slate-500 text-[10px] font-bold">
+                            ZONE
+                        </div>
+                        <button onclick="triggerSwing(3)" id="btn-zone-3" class="zone-btn w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/20 border border-amber-400/50 hover:bg-amber-500/40 text-amber-300 font-black text-sm flex flex-col items-center justify-center">
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                            <span class="text-[9px]">RGT (D)</span>
+                        </button>
+                        <div></div>
+                        <button onclick="triggerSwing(4)" id="btn-zone-4" class="zone-btn w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/20 border border-amber-400/50 hover:bg-amber-500/40 text-amber-300 font-black text-sm flex flex-col items-center justify-center">
+                            <i class="fa-solid fa-arrow-down text-xs"></i>
+                            <span class="text-[9px]">BOT (S)</span>
+                        </button>
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pitch Controls Guidance bar below Canvas -->
+            <div class="w-full max-w-[850px] mt-3 bg-slate-900/80 rounded-xl p-3 border border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-keyboard text-amber-400"></i>
+                    <span><strong>Keyboard:</strong> Press <strong>W</strong> (Top), <strong>A</strong> (Left), <strong>S</strong> (Bottom), <strong>D</strong> (Right) or Arrow Keys to swing!</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span> Hit = Score Pts</span>
+                    <span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span> HR = +1 Swing & Streak</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL 2: LEVEL COMPLETE / GAME OVER MODAL -->
+    <div id="status-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-8 text-center border-2 border-slate-700 shadow-2xl relative overflow-hidden">
+            <div id="status-icon-box" class="w-20 h-20 mx-auto rounded-3xl flex items-center justify-center text-4xl mb-4 shadow-xl">
+                🏆
+            </div>
+            <h2 id="status-title" class="font-tech text-3xl font-black text-white mb-2">LEVEL CLEARED!</h2>
+            <p id="status-desc" class="text-slate-300 text-sm mb-6">You reached the target score and unlocked the next World Tour stop!</p>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Final Score</span>
+                    <span id="status-score" class="font-tech text-xl font-bold text-amber-400">1250</span>
+                </div>
+                <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Swings Left</span>
+                    <span id="status-swings" class="font-tech text-xl font-bold text-emerald-400">3</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="showLevelSelect()" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition-colors">
+                    Level Select
+                </button>
+                <button id="status-action-btn" onclick="actionStatusBtn()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm tracking-wide transition-all shadow-lg">
+                    Next Level <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: INSTRUCTIONS & RULES MODAL -->
+    <div id="instructions-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-xl rounded-3xl p-6 sm:p-8 border border-slate-700 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeInstructions()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="flex items-center space-x-3 mb-4">
+                <i class="fa-solid fa-baseball text-2xl text-amber-400"></i>
+                <h2 class="font-tech text-xl sm:text-2xl font-black text-white">How to Play Arcade Baseball</h2>
+            </div>
+
+            <div class="space-y-4 text-xs sm:text-sm text-slate-300">
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center"><i class="fa-solid fa-crosshairs mr-2"></i> 1. Batter POV & 4 Strike Zones</h4>
+                    <p class="text-slate-400">Stand at home plate facing the pitcher. As the pitch travels toward you into 1 of 4 strike zones (Top, Left, Right, Bottom), swing matching the target zone!</p>
+                </div>
+
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center"><i class="fa-solid fa-keyboard mr-2"></i> 2. Controls & Timing</h4>
+                    <ul class="list-disc list-inside text-slate-400 space-y-1 mt-1">
+                        <li><strong>W or Up Arrow:</strong> Top Zone</li>
+                        <li><strong>A or Left Arrow:</strong> Left Zone</li>
+                        <li><strong>D or Right Arrow:</strong> Right Zone</li>
+                        <li><strong>S or Down Arrow:</strong> Bottom Zone</li>
+                        <li>Touch Screen / Mouse: Tap the corresponding directional button overlay.</li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center"><i class="fa-solid fa-trophy mr-2"></i> 3. Official Scoring & Rules</h4>
+                    <ul class="list-disc list-inside text-slate-400 space-y-1">
+                        <li><strong>Base Hit (&lt; Stadium HR Dist):</strong> Points = Distance ÷ 2. No swing lost! HR Streak resets.</li>
+                        <li><strong>Home Run (&gt;= Stadium HR Dist):</strong> Points = Distance + previous HR streak points! Earn <strong>+1 Bonus Swing</strong>!</li>
+                        <li><strong>Miss / Strike:</strong> Incorrect zone or timing = <strong>Lose 1 Swing</strong>. HR Streak resets.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="closeInstructions()" class="w-full mt-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm tracking-wide">
+                Got It, Let's Play!
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Footer -->
+    <footer class="w-full bg-slate-950 border-t border-slate-900 py-3 text-center text-xs text-slate-500">
+        Arcade Baseball: 10-Level World Tour Edition &bull; Standalone HTML5 Game
+    </footer>
+
+    <script>
+        const LEVELS_DATA = [
+            {
+                level: 1,
+                name: "Rookie Challenge",
+                venue: "Local Sandlot",
+                flag: "🇺🇸",
+                targetScore: 100,
+                hrDist: 300,
+                swings: 5,
+                pitcher: "Standard Pitcher",
+                pitchSpeed: 0.018,
+                pitchTypes: ["Fastball"],
+                desc: "Learn the fundamentals on your local neighborhood sandlot field.",
+                skyColor: "#1e3a8a",
+                grassColor: "#2e7d32",
+                fenceColor: "#8d6e63"
+            },
+            {
+                level: 2,
+                name: "Pro Challenge",
+                venue: "Minor League Park",
+                flag: "🇺🇸",
+                targetScore: 300,
+                hrDist: 325,
+                swings: 5,
+                pitcher: "Ace Pitcher",
+                pitchSpeed: 0.022,
+                pitchTypes: ["Fastball", "Changeup"],
+                desc: "Step up to the minor league stadium under the afternoon lights.",
+                skyColor: "#0f172a",
+                grassColor: "#1b5e20",
+                fenceColor: "#b71c1c"
+            },
+            {
+                level: 3,
+                name: "Master Challenge",
+                venue: "Major League Arena",
+                flag: "🇺🇸",
+                targetScore: 400,
+                hrDist: 350,
+                swings: 5,
+                pitcher: "All-Star Pitcher",
+                pitchSpeed: 0.025,
+                pitchTypes: ["Fastball", "Curveball", "Changeup"],
+                desc: "Big lights, big crowd, and sharp breaking balls.",
+                skyColor: "#020617",
+                grassColor: "#14532d",
+                fenceColor: "#1e293b"
+            },
+            {
+                level: 4,
+                name: "USA Tour",
+                venue: "Fenway Park (Boston, USA)",
+                flag: "🇺🇸",
+                targetScore: 550,
+                hrDist: 310,
+                swings: 5,
+                pitcher: "Chris Sale Bot",
+                pitchSpeed: 0.028,
+                pitchTypes: ["Fastball", "Slider", "Changeup"],
+                desc: "Take aim over the famous high Green Monster wall in Boston!",
+                skyColor: "#172554",
+                grassColor: "#15803d",
+                fenceColor: "#15803d"
+            },
+            {
+                level: 5,
+                name: "USA Tour",
+                venue: "Dodger Stadium (Los Angeles, USA)",
+                flag: "🇺🇸",
+                targetScore: 700,
+                hrDist: 330,
+                swings: 5,
+                pitcher: "Clayton Kershaw Bot",
+                pitchSpeed: 0.030,
+                pitchTypes: ["Fastball", "Curveball", "Slider"],
+                desc: "Soak in the LA sun and watch out for Kershaw's lethal curveball.",
+                skyColor: "#1e40af",
+                grassColor: "#166534",
+                fenceColor: "#0284c7"
+            },
+            {
+                level: 6,
+                name: "Canada Tour",
+                venue: "Rogers Centre (Toronto, Canada)",
+                flag: "🇨🇦",
+                targetScore: 850,
+                hrDist: 328,
+                swings: 5,
+                pitcher: "Jordan Romano Bot",
+                pitchSpeed: 0.033,
+                pitchTypes: ["Fastball", "Slider", "Knuckleball"],
+                desc: "Play under the dome in Toronto against high-velocity heat.",
+                skyColor: "#0f172a",
+                grassColor: "#14532d",
+                fenceColor: "#1d4ed8"
+            },
+            {
+                level: 7,
+                name: "Canada Tour",
+                venue: "Stade Olympique (Montreal, Canada)",
+                flag: "🇨🇦",
+                targetScore: 1000,
+                hrDist: 325,
+                swings: 5,
+                pitcher: "Denis Martínez Ghost",
+                pitchSpeed: 0.035,
+                pitchTypes: ["Fastball", "Curveball", "Knuckleball"],
+                desc: "Face the ghost of perfection in historic Montreal.",
+                skyColor: "#1e1b4b",
+                grassColor: "#166534",
+                fenceColor: "#4338ca"
+            },
+            {
+                level: 8,
+                name: "France Tour",
+                venue: "Stade Pershing (Paris, France)",
+                flag: "🇫🇷",
+                targetScore: 1200,
+                hrDist: 315,
+                swings: 5,
+                pitcher: "French National Ace",
+                pitchSpeed: 0.038,
+                pitchTypes: ["Fastball", "Slider", "Curveball", "Knuckleball"],
+                desc: "Play ball with the Paris skyline and French National Team.",
+                skyColor: "#172554",
+                grassColor: "#15803d",
+                fenceColor: "#b91c1c"
+            },
+            {
+                level: 9,
+                name: "France Tour",
+                venue: "Stade des Templiers (Sénart, France)",
+                flag: "🇫🇷",
+                targetScore: 1500,
+                hrDist: 335,
+                swings: 5,
+                pitcher: "Templiers Master Pitcher",
+                pitchSpeed: 0.040,
+                pitchTypes: ["Fastball", "Slider", "Changeup", "Knuckleball"],
+                desc: "Penultimate tour battle against Sénart's elite ace pitching.",
+                skyColor: "#030712",
+                grassColor: "#14532d",
+                fenceColor: "#1e3a8a"
+            },
+            {
+                level: 10,
+                name: "Legends Retro Showdown",
+                venue: "Griffith Stadium (1924 Classic)",
+                flag: "⚾",
+                targetScore: 2000,
+                hrDist: 388,
+                swings: 5,
+                pitcher: "Walter 'The Big Train' Johnson",
+                pitchSpeed: 0.043,
+                pitchTypes: ["Fastball", "Curveball", "Slider", "Knuckleball"],
+                desc: "Vintage Monochrome Mode! Step back to 1924 against the legend.",
+                skyColor: "#111111",
+                grassColor: "#222222",
+                fenceColor: "#444444"
+            }
+        ];
+
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) this.ctx = new AudioContext();
+                }
+            }
+
+            playHit() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(45, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playHomeRun() {
+                if (!this.enabled || !this.ctx) return;
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.08 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.08);
+                    osc.stop(this.ctx.currentTime + idx * 0.08 + 0.3);
+                });
+            }
+
+            playMiss() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(60, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playWhoosh() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+        }
+
+        const audioFX = new SoundEngine();
+
+        function toggleAudio() {
+            audioFX.enabled = !audioFX.enabled;
+            const icon = document.getElementById('audio-icon');
+            if (audioFX.enabled) {
+                icon.className = "fa-solid fa-volume-high";
+                audioFX.init();
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-slate-500";
+            }
+        }
+
+        let currentLevelIdx = 0;
+        let score = 0;
+        let swings = 5;
+        let hrStreak = 0;
+        let hrStreakPts = 0;
+        let maxUnlockedLevel = 1;
+
+        // Pause & Timer State Management
+        let isGamePaused = false;
+        let gameInProgress = false;
+        let pitchTimeout = null;
+        let delayTimeout = null;
+
+        const zoneCoords = {
+            1: { x: 400, y: 265, name: "TOP (W)" },
+            2: { x: 340, y: 310, name: "LEFT (A)" },
+            3: { x: 460, y: 310, name: "RIGHT (D)" },
+            4: { x: 400, y: 355, name: "BOTTOM (S)" }
+        };
+
+        let pitchState = 'idle'; // idle, winding, pitching, hit_flight, bat_throw, result_delay
+        let pitchProgress = 0;
+        let pitchTargetZone = 1; // 1: Top, 2: Left, 3: Right, 4: Bottom
+        let currentPitchType = "Fastball";
+        let userSwing = null;
+        let windingTimer = 0;
+
+        // Bat Animation & Physics Variables
+        let batSwingProgress = 0;
+        let isSwinging = false;
+        let batThrowProgress = 0;
+        let batThrowX = 400;
+        let batThrowY = 420;
+        let batThrowRot = 0;
+        let pitcherDucking = false;
+
+        // Ball Flight Animation Variables
+        let flightProgress = 0;
+        let flightDistance = 0;
+        let flightIsHR = false;
+        let toastTimeout = null;
+
+        // Canvas Setup (Logical Coordinates: 800x500)
+        const canvas = document.getElementById('pitchCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 500;
+
+        function showTopLeftToast(isHit, isHR, dist, pts, titleText) {
+            const toast = document.getElementById('top-left-score-toast');
+            const card = document.getElementById('toast-card');
+            const icon = document.getElementById('toast-icon');
+            const ptsElem = document.getElementById('toast-pts');
+            const detail = document.getElementById('toast-detail');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+
+            if (isHR) {
+                card.className = "bg-slate-950/90 border-2 border-amber-400 px-4 py-2.5 rounded-2xl backdrop-blur-md shadow-2xl flex items-center space-x-3";
+                icon.innerText = "💥";
+                ptsElem.className = "font-tech text-amber-400 font-black text-base sm:text-xl tracking-wide";
+                ptsElem.innerText = `+${pts} PTS`;
+                detail.innerText = `HOME RUN! (${dist} FT)`;
+            } else if (isHit) {
+                card.className = "bg-slate-950/90 border-2 border-emerald-400 px-4 py-2.5 rounded-2xl backdrop-blur-md shadow-2xl flex items-center space-x-3";
+                icon.innerText = "⚾";
+                ptsElem.className = "font-tech text-emerald-400 font-black text-base sm:text-xl tracking-wide";
+                ptsElem.innerText = `+${pts} PTS`;
+                detail.innerText = `BASE HIT (${dist} FT)`;
+            } else {
+                card.className = "bg-slate-950/90 border-2 border-red-500 px-4 py-2.5 rounded-2xl backdrop-blur-md shadow-2xl flex items-center space-x-3";
+                icon.innerText = "💨";
+                ptsElem.className = "font-tech text-red-400 font-black text-base sm:text-xl tracking-wide";
+                ptsElem.innerText = `STRIKE / MISS!`;
+                detail.innerText = titleText || "-1 SWING";
+            }
+
+            toast.classList.remove('opacity-0', '-translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-2');
+            }, 2600);
+        }
+
+        function startNextPitch() {
+            if (isGamePaused) return;
+
+            if (pitchTimeout) clearTimeout(pitchTimeout);
+            if (delayTimeout) clearTimeout(delayTimeout);
+
+            pitchState = 'winding';
+            pitchProgress = 0;
+            userSwing = null;
+            windingTimer = 0;
+            isSwinging = false;
+            batSwingProgress = 0;
+            batThrowProgress = 0;
+            pitcherDucking = false;
+            
+            const lvl = LEVELS_DATA[currentLevelIdx];
+            pitchTargetZone = Math.floor(Math.random() * 4) + 1;
+            currentPitchType = lvl.pitchTypes[Math.floor(Math.random() * lvl.pitchTypes.length)];
+
+            // Update pitch alert banner UI
+            const statusBadge = document.getElementById('pitch-status-badge');
+            const statusText = document.getElementById('pitch-status-text');
+            const typeText = document.getElementById('pitch-type-text');
+
+            statusBadge.className = "px-4 py-2 rounded-xl bg-slate-950/90 border-2 border-amber-400/80 shadow-lg text-center backdrop-blur-md animate-pitch-alert";
+            statusText.innerText = "⏳ PITCHER WINDING UP...";
+            typeText.innerText = `Incoming: ${currentPitchType}`;
+
+            pitchTimeout = setTimeout(() => {
+                if (pitchState === 'winding' && !isGamePaused) {
+                    pitchState = 'pitching';
+                    statusText.innerText = "🔥 PITCH INCOMING! SWING!";
+                    statusBadge.className = "px-4 py-2 rounded-xl bg-red-950/90 border-2 border-red-500 shadow-lg text-center backdrop-blur-md animate-pitch-alert";
+                    audioFX.playWhoosh();
+                }
+            }, 900);
+        }
+
+        function triggerSwing(zoneNum) {
+            if (isGamePaused || pitchState !== 'pitching' || userSwing !== null) return;
+
+            audioFX.init();
+            userSwing = zoneNum;
+
+            const btn = document.getElementById(`btn-zone-${zoneNum}`);
+            if (btn) {
+                btn.classList.add('active-key');
+                setTimeout(() => btn.classList.remove('active-key'), 200);
+            }
+
+            evaluateSwing();
+        }
+
+        function evaluateSwing() {
+            const lvl = LEVELS_DATA[currentLevelIdx];
+
+            // Always start swing animation on plate
+            isSwinging = true;
+            batSwingProgress = 0;
+
+            if (userSwing === pitchTargetZone) {
+                pitchState = 'hit_flight';
+                audioFX.playHit();
+
+                const baseDist = Math.floor(Math.random() * 260) + 210;
+                const isHR = baseDist >= lvl.hrDist;
+
+                flightDistance = baseDist;
+                flightIsHR = isHR;
+                flightProgress = 0;
+
+            } else {
+                // MISS! Bat slips and flies directly at pitcher!
+                pitchState = 'bat_throw';
+                batThrowProgress = 0;
+                batThrowX = 400;
+                batThrowY = 420;
+                batThrowRot = 0;
+                audioFX.playMiss();
+            }
+        }
+
+        function processHitScore() {
+            const lvl = LEVELS_DATA[currentLevelIdx];
+            pitchState = 'result_delay';
+
+            if (flightIsHR) {
+                let pts = flightDistance + hrStreakPts;
+                hrStreakPts += pts;
+                hrStreak++;
+                score += pts;
+                swings++; // Earn +1 bonus swing on HR!
+                audioFX.playHomeRun();
+
+                updateHUD();
+                showTopLeftToast(true, true, flightDistance, pts, "HOME RUN!");
+            } else {
+                let pts = Math.floor(flightDistance / 2);
+                hrStreak = 0;
+                hrStreakPts = 0;
+                score += pts;
+
+                updateHUD();
+                showTopLeftToast(true, false, flightDistance, pts, "BASE HIT!");
+            }
+
+            // Natural Delay after hit before next pitch or game screen
+            delayTimeout = setTimeout(() => {
+                if (!isGamePaused) checkGameStatusOrNextPitch();
+            }, 1400);
+        }
+
+        function handleMissSequence() {
+            pitchState = 'result_delay';
+            swings--;
+            hrStreak = 0;
+            hrStreakPts = 0;
+
+            updateHUD();
+            showTopLeftToast(false, false, 0, 0, "MISS / STRIKE!");
+
+            // Natural Delay after miss sequence
+            delayTimeout = setTimeout(() => {
+                if (!isGamePaused) checkGameStatusOrNextPitch();
+            }, 1200);
+        }
+
+        function checkGameStatusOrNextPitch() {
+            if (isGamePaused) return;
+            const lvl = LEVELS_DATA[currentLevelIdx];
+
+            if (score >= lvl.targetScore) {
+                gameInProgress = false;
+                if (currentLevelIdx + 1 > maxUnlockedLevel - 1) {
+                    maxUnlockedLevel = Math.min(10, currentLevelIdx + 2);
+                    saveProgress();
+                }
+                showStatusModal(true);
+            } else if (swings <= 0) {
+                gameInProgress = false;
+                showStatusModal(false);
+            } else {
+                startNextPitch();
+            }
+        }
+
+        function drawStadium() {
+            const lvl = LEVELS_DATA[currentLevelIdx];
+            
+            // Sky Background
+            ctx.fillStyle = lvl.skyColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Horizon Lights / City Backdrop
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 150, canvas.width, 30);
+
+            // Fenway Green Monster Special Wall
+            if (lvl.level === 4) {
+                ctx.fillStyle = '#15803d';
+                ctx.fillRect(0, 110, canvas.width, 70);
+                ctx.strokeStyle = '#fef08a';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(50, 120, 120, 40);
+            } else if (lvl.level === 8) {
+                // Eiffel Tower silhouette in distance for Paris
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(400, 180);
+                ctx.lineTo(390, 120);
+                ctx.lineTo(410, 120);
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            // Outfield Fence
+            ctx.fillStyle = lvl.fenceColor;
+            ctx.fillRect(0, 180, canvas.width, 25);
+
+            // Outfield Grass
+            ctx.fillStyle = lvl.grassColor;
+            ctx.fillRect(0, 205, canvas.width, canvas.height - 205);
+
+            // Infield Dirt Perspective Triangle
+            ctx.fillStyle = '#8d6e63';
+            ctx.beginPath();
+            ctx.moveTo(120, 500);
+            ctx.lineTo(370, 215);
+            ctx.lineTo(430, 215);
+            ctx.lineTo(680, 500);
+            ctx.fill();
+
+            // Pitcher's Mound Rubber
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(385, 212, 30, 8);
+
+            // Pitcher Character Graphic with Wind-Up Pose or Ducking React Animation
+            const windingOffset = (pitchState === 'winding' && !isGamePaused) ? Math.sin(Date.now() * 0.01) * 6 : 0;
+            const pitcherHeadY = pitcherDucking ? 195 : 180;
+            const pitcherBodyY = pitcherDucking ? 202 : 192;
+
+            ctx.fillStyle = '#f87171'; // Pitcher cap
+            ctx.beginPath();
+            ctx.arc(400 + windingOffset, pitcherHeadY, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#f8fafc'; // Pitcher jersey
+            ctx.fillRect(391 + windingOffset, pitcherBodyY, 18, pitcherDucking ? 12 : 22);
+
+            // Pitcher arm throwing or ducking gesture
+            ctx.strokeStyle = '#f8fafc';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(400 + windingOffset, pitcherBodyY + 3);
+            if (pitcherDucking) {
+                ctx.lineTo(380 + windingOffset, 190);
+                ctx.lineTo(420 + windingOffset, 190);
+                // "DODGE!" Alert Speech Bubble above pitcher
+                ctx.fillStyle = '#ef4444';
+                ctx.font = 'black 11px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText('⚡ DUCK! ⚡', 400, 165);
+            } else {
+                ctx.lineTo(418 + windingOffset, 180 + windingOffset);
+            }
+            ctx.stroke();
+
+            // Strike Zone Outer Box at Home Plate (High Contrast)
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+            ctx.fillRect(280, 220, 240, 180);
+
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(280, 220, 240, 180);
+
+            // Strike Zone Grid Lines (4 Quadrants)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(400, 220); ctx.lineTo(400, 400); // Vertical divide
+            ctx.moveTo(280, 310); ctx.lineTo(520, 310); // Horizontal divide
+            ctx.stroke();
+
+            // Zone Number Labels (Top, Left, Right, Bottom)
+            ctx.fillStyle = '#fef08a';
+            ctx.font = 'bold 13px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.fillText('TOP (W)', 400, 242);
+            ctx.fillText('LFT (A)', 325, 315);
+            ctx.fillText('RGT (D)', 475, 315);
+            ctx.fillText('BOT (S)', 400, 388);
+
+            // Highlight incoming pitch target zone for training assistance (Levels 1-3 only)
+            if (pitchState === 'pitching' && lvl.level <= 3) {
+                const target = zoneCoords[pitchTargetZone];
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(
+                    target.x - 50,
+                    target.y - 40,
+                    100,
+                    80
+                );
+            }
+
+            // Draw Swinging Bat or Thrown Bat Animation
+            drawBatAnimations();
+
+            // Visual Pause Overlay on Canvas when paused
+            if (isGamePaused) {
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.65)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = '900 28px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText('⏸ GAME PAUSED', 400, 240);
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '600 14px "Plus Jakarta Sans"';
+                ctx.fillText('Select a destination from Tour Map or resume', 400, 270);
+            }
+        }
+
+        function drawBallTrajectory() {
+            if (pitchState !== 'pitching' || isGamePaused) return;
+
+            const lvl = LEVELS_DATA[currentLevelIdx];
+            pitchProgress += lvl.pitchSpeed;
+
+            if (pitchProgress > 1) pitchProgress = 1;
+
+            let startX = 400, startY = 190;
+            let target = zoneCoords[pitchTargetZone];
+
+            let curveOffsetX = 0;
+            let curveOffsetY = 0;
+
+            if (currentPitchType === "Curveball") {
+                curveOffsetY = Math.sin(pitchProgress * Math.PI) * -40;
+            } else if (currentPitchType === "Slider") {
+                curveOffsetX = Math.sin(pitchProgress * Math.PI) * 50;
+            } else if (currentPitchType === "Knuckleball") {
+                curveOffsetX = (Math.random() - 0.5) * 16;
+            }
+
+            let currentX = startX + (target.x - startX) * pitchProgress + curveOffsetX;
+            let currentY = startY + (target.y - startY) * pitchProgress + curveOffsetY;
+            let radius = 6 + (pitchProgress * 26); // Ball scales clearly as it approaches plate
+
+            // High Contrast Pitch Motion Trail
+            ctx.strokeStyle = 'rgba(254, 240, 138, 0.4)';
+            ctx.lineWidth = radius * 0.8;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+
+            // Ball Shadow on Dirt Ground
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(currentX, currentY + radius + 10, radius * 1.1, radius * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Baseball Outer Glow
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, radius + 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Baseball Solid Core
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Red Seams
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, radius * 0.65, -0.6, 1.6);
+            ctx.stroke();
+
+            // Called Strike / Missed Swing by timing
+            if (pitchProgress >= 1 && userSwing === null) {
+                pitchState = 'bat_throw';
+                batThrowProgress = 0;
+                audioFX.playMiss();
+            }
+        }
+
+        function renderLevelSelectGrid() {
+            const grid = document.getElementById('levels-grid');
+            const resumeContainer = document.getElementById('resume-banner-container');
+            grid.innerHTML = '';
+            resumeContainer.innerHTML = '';
+
+            // Render Resume Game Banner if game is paused in background
+            if (gameInProgress && isGamePaused) {
+                const activeLvl = LEVELS_DATA[currentLevelIdx];
+                resumeContainer.innerHTML = `
+                    <div class="bg-gradient-to-r from-amber-500/20 via-slate-900 to-amber-500/20 border-2 border-amber-500/60 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
+                        <div class="flex items-center space-x-3 text-center sm:text-left">
+                            <div class="text-3xl">${activeLvl.flag}</div>
+                            <div>
+                                <span class="text-[10px] text-amber-400 font-bold uppercase tracking-widest block">Match In Progress</span>
+                                <h3 class="font-bold text-white text-base">${activeLvl.venue} (LVL ${activeLvl.level})</h3>
+                                <p class="text-xs text-slate-400">Score: <strong class="text-emerald-400">${score}</strong> / ${activeLvl.targetScore} PTS &bull; Swings Left: <strong class="text-amber-300">${swings}</strong></p>
+                            </div>
+                        </div>
+                        <button onclick="resumeGame()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm tracking-wide shadow-lg transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Resume Game</span>
+                        </button>
+                    </div>
+                `;
+            }
+
+            LEVELS_DATA.forEach((lvl, idx) => {
+                const isUnlocked = (lvl.level <= maxUnlockedLevel);
+                const card = document.createElement('div');
+                card.className = `glass-panel p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${
+                    isUnlocked 
+                    ? 'border-slate-700 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/10 cursor-pointer bg-slate-900/80' 
+                    : 'border-slate-800/60 opacity-60 bg-slate-950/40 cursor-not-allowed'
+                }`;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-arcade text-[10px] text-amber-400">LVL ${lvl.level}</span>
+                            <span class="text-xl">${lvl.flag}</span>
+                        </div>
+                        <h4 class="font-bold text-sm text-white line-clamp-1">${lvl.venue}</h4>
+                        <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">${lvl.desc}</p>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                        <div>
+                            <span class="text-[10px] text-slate-500 uppercase block font-semibold">Target</span>
+                            <span class="font-tech text-amber-400 font-bold">${lvl.targetScore} PTS</span>
+                        </div>
+                        ${isUnlocked ? `
+                            <span class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 font-bold text-[10px] uppercase">
+                                Play <i class="fa-solid fa-play ml-1"></i>
+                            </span>
+                        ` : `
+                            <span class="text-slate-600 font-bold text-xs"><i class="fa-solid fa-lock"></i> Locked</span>
+                        `}
+                    </div>
+                `;
+
+                if (isUnlocked) {
+                    card.onclick = () => startLevel(idx);
+                }
+
+                grid.appendChild(card);
+            });
+        }
+
+        function showLevelSelect() {
+            // Pause active pitch timers & update game state
+            isGamePaused = true;
+            if (pitchTimeout) clearTimeout(pitchTimeout);
+            if (delayTimeout) clearTimeout(delayTimeout);
+
+            // Close all modals so Level Select map is visible
+            document.getElementById('status-modal').classList.add('hidden');
+            document.getElementById('instructions-modal').classList.add('hidden');
+
+            renderLevelSelectGrid();
+            document.getElementById('level-select-screen').classList.remove('hidden');
+            document.getElementById('gameplay-screen').classList.add('hidden');
+        }
+
+        function resumeGame() {
+            isGamePaused = false;
+            document.getElementById('level-select-screen').classList.add('hidden');
+            document.getElementById('gameplay-screen').classList.remove('hidden');
+
+            // Resume pitch flow safely
+            startNextPitch();
+        }
+
+        function startLevel(idx) {
+            audioFX.init();
+            currentLevelIdx = idx;
+            const lvl = LEVELS_DATA[currentLevelIdx];
+            
+            score = 0;
+            swings = lvl.swings;
+            hrStreak = 0;
+            hrStreakPts = 0;
+            gameInProgress = true;
+            isGamePaused = false;
+
+            const container = document.getElementById('canvas-container');
+            if (lvl.level === 10) {
+                container.classList.add('monochrome-mode');
+            } else {
+                container.classList.remove('monochrome-mode');
+            }
+
+            updateHUD();
+
+            document.getElementById('level-select-screen').classList.add('hidden');
+            document.getElementById('gameplay-screen').classList.remove('hidden');
+
+            startNextPitch();
+        }
+
+        function updateHUD() {
+            const lvl = LEVELS_DATA[currentLevelIdx];
+            document.getElementById('hud-flag').innerText = lvl.flag;
+            document.getElementById('hud-level-num').innerText = `LVL ${lvl.level}`;
+            document.getElementById('hud-venue-name').innerText = lvl.venue;
+            document.getElementById('hud-pitcher').innerText = `vs ${lvl.pitcher}`;
+            document.getElementById('hud-target-score').innerText = `${lvl.targetScore} PTS`;
+            document.getElementById('hud-score').innerText = score;
+            document.getElementById('hud-swings').innerText = swings;
+            document.getElementById('hud-streak').innerText = `${hrStreak} 🔥`;
+        }
+
+        function drawFlightAnimation() {
+            if (pitchState !== 'hit_flight') return;
+
+            flightProgress += 0.025;
+
+            let startX = 400, startY = 350;
+            let endX = flightIsHR ? 400 + (Math.random() * 120 - 60) : 300 + (Math.random() * 200);
+            let endY = flightIsHR ? 50 : 160;
+
+            let currentX = startX + (endX - startX) * flightProgress;
+            let currentY = startY + (endY - startY) * flightProgress - Math.sin(flightProgress * Math.PI) * 200;
+            let radius = Math.max(4, 20 * (1 - flightProgress * 0.7));
+
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (flightProgress >= 1) {
+                pitchState = 'result';
+                processHitScore();
+            }
+        }
+
+        function renderGameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawStadium();
+            drawBallTrajectory();
+            drawFlightAnimation();
+
+            requestAnimationFrame(renderGameLoop);
+        }
+
+        function showOutcomeModal(isHit, isHR, dist, pts, titleText) {
+            const modal = document.getElementById('result-modal');
+            const badge = document.getElementById('result-badge');
+            const title = document.getElementById('result-title');
+            const subtitle = document.getElementById('result-subtitle');
+
+            title.innerText = titleText;
+
+            if (isHR) {
+                badge.className = "w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-3 shadow-lg bg-gradient-to-tr from-amber-500 to-red-600 text-white";
+                badge.innerText = "💥";
+                subtitle.innerText = `Distance: ${dist} ft (HOME RUN!)`;
+            } else if (isHit) {
+                badge.className = "w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-3 shadow-lg bg-gradient-to-tr from-emerald-500 to-teal-600 text-white";
+                badge.innerText = "⚾";
+                subtitle.innerText = `Distance: ${dist} ft (Base Hit)`;
+            } else {
+                badge.className = "w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-3 shadow-lg bg-gradient-to-tr from-red-600 to-slate-800 text-white";
+                badge.innerText = "💨";
+                subtitle.innerText = "Missed Target Zone!";
+            }
+
+            document.getElementById('result-zone').innerText = zoneCoords[pitchTargetZone].name;
+            document.getElementById('result-pts').innerText = `+${pts} PTS`;
+            document.getElementById('result-streak-pts').innerText = `+${hrStreakPts} PTS`;
+            document.getElementById('result-swings').innerText = swings;
+
+            modal.classList.remove('hidden');
+        }
+
+        function nextPitchFromModal() {
+            document.getElementById('result-modal').classList.add('hidden');
+            const lvl = LEVELS_DATA[currentLevelIdx];
+
+            if (score >= lvl.targetScore) {
+                if (currentLevelIdx + 1 > maxUnlockedLevel - 1) {
+                    maxUnlockedLevel = Math.min(10, currentLevelIdx + 2);
+                    saveProgress();
+                }
+                showStatusModal(true);
+            } else if (swings <= 0) {
+                showStatusModal(false);
+            } else {
+                startNextPitch();
+            }
+        }
+
+        function showStatusModal(isSuccess) {
+            const modal = document.getElementById('status-modal');
+            const iconBox = document.getElementById('status-icon-box');
+            const title = document.getElementById('status-title');
+            const desc = document.getElementById('status-desc');
+            const actionBtn = document.getElementById('status-action-btn');
+
+            document.getElementById('status-score').innerText = score;
+            document.getElementById('status-swings').innerText = swings;
+
+            if (isSuccess) {
+                iconBox.className = "w-20 h-20 mx-auto rounded-3xl flex items-center justify-center text-4xl mb-4 shadow-xl bg-gradient-to-tr from-amber-400 to-emerald-500 text-slate-950";
+                iconBox.innerText = "🏆";
+                title.innerText = "LEVEL CLEARED!";
+                desc.innerText = `Congratulations! You conquered ${LEVELS_DATA[currentLevelIdx].venue}.`;
+
+                if (currentLevelIdx < 9) {
+                    actionBtn.innerText = "Next Level";
+                    actionBtn.onclick = () => {
+                        modal.classList.add('hidden');
+                        startLevel(currentLevelIdx + 1);
+                    };
+                } else {
+                    title.innerText = "WORLD TOUR CHAMPION!";
+                    desc.innerText = "You completed all 10 Levels and defeated Walter Johnson in 1924 Griffith Stadium!";
+                    actionBtn.innerText = "Replay Campaign";
+                    actionBtn.onclick = () => {
+                        modal.classList.add('hidden');
+                        showLevelSelect();
+                    };
+                }
+            } else {
+                iconBox.className = "w-20 h-20 mx-auto rounded-3xl flex items-center justify-center text-4xl mb-4 shadow-xl bg-gradient-to-tr from-red-600 to-slate-900 text-white";
+                iconBox.innerText = "🛑";
+                title.innerText = "LEVEL FAILED";
+                desc.innerText = "You ran out of swings before reaching the target score.";
+                actionBtn.innerText = "Try Again";
+                actionBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    startLevel(currentLevelIdx);
+                };
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function showInstructions() {
+            document.getElementById('instructions-modal').classList.remove('hidden');
+        }
+
+        function closeInstructions() {
+            document.getElementById('instructions-modal').classList.add('hidden');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (isGamePaused || pitchState !== 'pitching' || userSwing !== null) return;
+
+            const key = e.key.toLowerCase();
+            if (key === 'w' || key === 'arrowup' || key === '1') triggerSwing(1);
+            if (key === 'a' || key === 'arrowleft' || key === '2') triggerSwing(2);
+            if (key === 'd' || key === 'arrowright' || key === '3') triggerSwing(3);
+            if (key === 's' || key === 'arrowdown' || key === '4') triggerSwing(4);
+        });
+
+        function saveProgress() {
+            try {
+                localStorage.setItem('arcade_baseball_max_lvl', maxUnlockedLevel);
+            } catch (e) {
+                console.warn('LocalStorage save failed:', e);
+            }
+        }
+
+        function loadProgress() {
+            try {
+                const saved = localStorage.getItem('arcade_baseball_max_lvl');
+                if (saved) {
+                    maxUnlockedLevel = parseInt(saved, 10) || 1;
+                }
+            } catch (e) {
+                console.warn('LocalStorage load failed:', e);
+            }
+        }
+
+        function drawBatAnimations() {
+            if (pitchState === 'bat_throw') {
+                batThrowProgress += 0.04;
+                batThrowX = 400 + (Math.sin(batThrowProgress * 5) * 80 * (1 - batThrowProgress));
+                batThrowY = 420 - (batThrowProgress * 220);
+                batThrowRot += 0.3;
+
+                if (batThrowY < 260) {
+                    pitcherDucking = true;
+                }
+
+                ctx.save();
+                ctx.translate(batThrowX, batThrowY);
+                ctx.rotate(batThrowRot);
+
+                ctx.fillStyle = '#d97706';
+                ctx.fillRect(-4, -25, 8, 50);
+                ctx.fillStyle = '#b45309';
+                ctx.fillRect(-3, 5, 6, 20);
+
+                ctx.restore();
+
+                if (batThrowProgress >= 1) {
+                    pitcherDucking = false;
+                    handleMissSequence();
+                }
+            } else if (isSwinging) {
+                batSwingProgress += 0.08;
+                if (batSwingProgress > 1) {
+                    batSwingProgress = 1;
+                    isSwinging = false;
+                }
+
+                const angle = -Math.PI / 3 + (batSwingProgress * Math.PI);
+                const target = userSwing ? zoneCoords[userSwing] : { x: 400, y: 350 };
+
+                ctx.save();
+                ctx.translate(target.x, target.y + 40);
+                ctx.rotate(angle);
+
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(-5, -50, 10, 50);
+                ctx.fillStyle = '#b45309';
+                ctx.fillRect(-3, -10, 6, 20);
+
+                ctx.restore();
+            }
+        }
+
+        window.onload = function() {
+            loadProgress();
+            renderLevelSelectGrid();
+            renderGameLoop();
+        };
+    </script>
+</body>
+</html>
