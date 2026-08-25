@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Alex | Developer Portfolio & Personal Hub</title>
+  <title>Saif | Developer Portfolio & Personal Hub</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -78,10 +78,10 @@
       <!-- Navigation Links -->
       <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
         <a href="#projects" class="hover:text-sky-400 transition-colors">Projects</a>
-        <a href="#interests" class="hover:text-sky-400 transition-colors">Interests</a>
+        <a href="./my-game/baseball-master.html" class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold transition-all shadow-md shadow-sky-500/20">
+          🎮 Play My Game
+        </a>
       </nav>
-      <a href="./my-game/baseball-master.html">Play My Game</a>
-      <a href="https://file:///C:/Users/safey/Downloads/baseball-master.html">Play My Game</a>
 
       <!-- Mobile Navigation Button -->
       <button id="mobile-menu-btn" class="md:hidden p-2 text-slate-400 hover:text-white" aria-label="Toggle Menu">
@@ -92,7 +92,7 @@
     <!-- Mobile Menu -->
     <div id="mobile-menu" class="hidden md:hidden bg-slate-950 border-b border-slate-800 px-4 py-3 space-y-2 text-sm">
       <a href="#projects" class="block py-2 text-slate-300 hover:text-white">Projects</a>
-      <a href="#interests" class="block py-2 text-slate-300 hover:text-white">Interests</a>
+      <a href="./my-game/baseball-master.html" class="block py-2 text-sky-400 font-bold hover:text-sky-300">🎮 Play My Game</a>
     </div>
   </header>
 
@@ -116,7 +116,10 @@
         </p>
 
         <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2">
-          <a href="#projects" class="px-6 py-3 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold transition-all shadow-lg shadow-sky-500/10">
+          <a href="./my-game/baseball-master.html" class="px-6 py-3 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold transition-all shadow-lg shadow-sky-500/10 flex items-center gap-2">
+            <i class="fa-solid fa-gamepad"></i> Play Baseball Master
+          </a>
+          <a href="#projects" class="px-6 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold transition-all">
             View My Work
           </a>
         </div>
@@ -144,7 +147,26 @@
     <!-- Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       
-      <!-- Project 1 -->
+      <!-- Project 1: Baseball Master Game -->
+      <div class="clean-card p-6 flex flex-col justify-between project-item" data-category="web">
+        <div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Featured Game</span>
+          <h3 class="text-xl font-bold text-white mt-3 mb-2">Baseball Master</h3>
+          <p class="text-slate-300 text-sm leading-relaxed mb-4">
+            An interactive web-based baseball simulation game. Test your skills and aim for the high score!
+          </p>
+        </div>
+        <div>
+          <div class="flex flex-wrap gap-2 mb-4 text-xs font-mono text-slate-400">
+            <span>HTML5</span> • <span>JavaScript</span> • <span>CSS</span>
+          </div>
+          <a href="./my-game/baseball-master.html" class="inline-flex items-center gap-1.5 text-xs font-bold text-sky-400 hover:underline">
+            Play Game Now &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Project 2 -->
       <div class="clean-card p-6 flex flex-col justify-between project-item" data-category="web">
         <div>
           <span class="text-xs font-semibold px-2.5 py-1 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Web App</span>
@@ -163,7 +185,7 @@
         </div>
       </div>
 
-      <!-- Project 2 -->
+      <!-- Project 3 -->
       <div class="clean-card p-6 flex flex-col justify-between project-item" data-category="tools">
         <div>
           <span class="text-xs font-semibold px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Tool</span>
@@ -182,7 +204,7 @@
         </div>
       </div>
 
-      <!-- Project 3 -->
+      <!-- Project 4 -->
       <div class="clean-card p-6 flex flex-col justify-between project-item" data-category="tools">
         <div>
           <span class="text-xs font-semibold px-2.5 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">Utility</span>
@@ -196,25 +218,6 @@
             <span>TypeScript</span> • <span>React</span> • <span>CSS</span>
           </div>
           <button onclick="openModal('proj-strategy')" class="text-xs font-bold text-sky-400 hover:underline">
-            View Details &rarr;
-          </button>
-        </div>
-      </div>
-
-      <!-- Project 4 -->
-      <div class="clean-card p-6 flex flex-col justify-between project-item" data-category="web">
-        <div>
-          <span class="text-xs font-semibold px-2.5 py-1 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Web App</span>
-          <h3 class="text-xl font-bold text-white mt-3 mb-2">Personal Library & Media Manager</h3>
-          <p class="text-slate-300 text-sm leading-relaxed mb-4">
-            A web application to index read books, track favorite TV series, write brief reviews, and rate content.
-          </p>
-        </div>
-        <div>
-          <div class="flex flex-wrap gap-2 mb-4 text-xs font-mono text-slate-400">
-            <span>HTML5</span> • <span>JavaScript</span> • <span>SQLite</span>
-          </div>
-          <button onclick="openModal('proj-library')" class="text-xs font-bold text-sky-400 hover:underline">
             View Details &rarr;
           </button>
         </div>
@@ -373,11 +376,6 @@
         title: 'Strategy Game Data Calculator',
         desc: 'A web utility designed for grand strategy and simulation games to calculate unit compositions, build queues, and efficiency metrics.',
         stack: ['TypeScript', 'React', 'Tailwind CSS']
-      },
-      'proj-library': {
-        title: 'Personal Library & Media Manager',
-        desc: 'A clean cataloging app to keep track of books read, ongoing watchlists, and personal notes.',
-        stack: ['HTML5', 'Vanilla JavaScript', 'SQLite', 'Tailwind CSS']
       }
     };
 
@@ -406,7 +404,7 @@
 
     function copyEmail() {
       const temp = document.createElement('input');
-      temp.value = 'alex.dev@example.com';
+      temp.value = 'saif.dev@example.com';
       document.body.appendChild(temp);
       temp.select();
       document.execCommand('copy');
