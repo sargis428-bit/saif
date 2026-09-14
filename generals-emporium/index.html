@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generals Emporium</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for Sumerian Clay & Napoleonic French Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700&family=Great+Vibes&family=Marcellus&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=UnifrakturMaguntika&display=swap" rel="stylesheet">
+
+    <style>
+        /* === THEME 1: ANCIENT SUMERIAN CLAY TABLET (VIEWING MODE) === */
+        .theme-clay {
+            background-color: #2a1b12;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(184, 92, 43, 0.15) 0%, rgba(20, 10, 5, 0.9) 100%),
+                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E");
+            color: #e8d0b5;
+            font-family: 'Marcellus', Georgia, serif;
+        }
+
+        .font-sumerian-header {
+            font-family: 'Cinzel Decorative', 'Cinzel', serif;
+            letter-spacing: 0.1em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 1px rgba(255, 200, 150, 0.2);
+        }
+
+        .font-cuneiform-subtle {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Carved Clay Tablet Card Effect */
+        .clay-card {
+            background: linear-gradient(145deg, #a6582d, #6e3518);
+            border: 3px solid #4a210d;
+            box-shadow: 
+                inset 2px 2px 6px rgba(255, 220, 180, 0.3),
+                inset -3px -3px 8px rgba(0, 0, 0, 0.7),
+                5px 8px 20px rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            color: #fdf3e7;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        .clay-card::before {
+            content: '';
+            position: absolute;
+            top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px dashed rgba(255, 230, 200, 0.2);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .clay-badge {
+            background: #4a210d;
+            border: 1px solid #c87941;
+            box-shadow: inset 1px 1px 3px #000;
+        }
+
+        .clay-input {
+            background: #472111;
+            border: 2px solid #8c421d;
+            color: #ffdcb5;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8);
+        }
+        .clay-input:focus {
+            outline: none;
+            border-color: #d97745;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.9), 0 0 8px rgba(217, 119, 69, 0.5);
+        }
+
+        /* === THEME 2: FRENCH NAPOLEONIC DISPATCH (EDITING MODE) === */
+        .theme-napoleon {
+            background-color: #f2ebd9;
+            background-image: 
+                linear-gradient(to right, rgba(180, 40, 40, 0.03) 1px, transparent 1px),
+                radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.12) 0%, transparent 50%),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+            color: #1a2332;
+            font-family: 'Playfair Display', Georgia, serif;
+        }
+
+        .font-napoleon-script {
+            font-family: 'Great Vibes', 'Pinyon Script', cursive;
+        }
+
+        .font-napoleon-header {
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 0.05em;
+        }
+
+        .napoleon-card {
+            background: #fdfbf7;
+            border: 2px solid #d4af37;
+            box-shadow: 
+                0 0 0 4px #1b263b,
+                0 10px 30px rgba(0, 0, 0, 0.25);
+            position: relative;
+        }
+
+        .napoleon-gold-border {
+            border: 1px solid #d4af37;
+        }
+
+        .wax-seal {
+            width: 54px;
+            height: 54px;
+            background: radial-gradient(circle at 35% 35%, #c0392b, #781e1e);
+            border-radius: 50%;
+            box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.4), inset -2px -2px 4px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f1c40f;
+            border: 2px dashed #962d22;
+        }
+
+        .napoleon-input {
+            background: #faf6ee;
+            border: 1px solid #b89737;
+            color: #1a2332;
+            font-family: 'Playfair Display', serif;
+            transition: all 0.2s ease;
+        }
+
+        .napoleon-input:focus {
+            outline: none;
+            border-color: #1b263b;
+            box-shadow: 0 0 0 2px rgba(27, 38, 59, 0.2);
+            background: #ffffff;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8c421d;
+            border-radius: 4px;
+        }
+        .theme-napoleon ::-webkit-scrollbar-thumb {
+            background: #1b263b;
+        }
+    </style>
+</head>
+<body id="appBody" class="theme-clay min-h-screen transition-colors duration-500 pb-16">
+
+    <!-- TOP NAVIGATION BAR / SCREEN TOGGLE -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-opacity-90 border-b shadow-lg transition-colors duration-500" id="mainHeader">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- App Logo / Title -->
+            <div class="flex items-center space-x-3">
+                <div id="headerIcon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md border">
+                    <i class="fa-solid font-bold text-amber-400 fa-monument"></i>
+                </div>
+                <div>
+                    <h1 id="headerTitle" class="text-xl sm:text-2xl font-bold font-sumerian-header tracking-wider">
+                        GENERALS EMPORIUM
+                    </h1>
+                    <p id="headerSubtitle" class="text-xs opacity-80 font-mono tracking-widest uppercase">
+                        Historical Generals & Battle Repository
+                    </p>
+                </div>
+            </div>
+
+            <!-- View Switcher Tabs -->
+            <div class="flex items-center space-x-2 bg-black/40 p-1.5 rounded-xl border border-white/10" id="tabContainer">
+                <button id="navViewBtn" onclick="switchTab('view')" class="px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 shadow-inner">
+                    <i class="fa-solid fa-eye"></i>
+                    <span class="hidden md:inline">Viewing Screen</span>
+                    <span class="text-xs opacity-75 hidden lg:inline">(Clay Tablet)</span>
+                </button>
+                <button id="navEditBtn" onclick="switchTab('edit')" class="px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-feather-pointed"></i>
+                    <span class="hidden md:inline">Editing Screen</span>
+                    <span class="text-xs opacity-75 hidden lg:inline">(Napoleonic Dispatch)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+
+        <!-- ========================================================================= -->
+        <!-- VIEWING SCREEN (ANCIENT SUMERIAN CLAY TABLET AESTHETIC)                   -->
+        <!-- ========================================================================= -->
+        <section id="viewScreen" class="space-y-8">
+
+            <!-- Hero Banner / Sumerian Clay Header -->
+            <div class="clay-card p-6 sm:p-8 text-center relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 opacity-10 text-9xl pointer-events-none">
+                    <i class="fa-solid fa-gavel"></i>
+                </div>
+                <span class="clay-badge px-3 py-1 rounded-full text-xs font-bold tracking-widest text-amber-200 uppercase inline-block mb-2">
+                    <i class="fa-solid fa-scroll mr-1"></i> Clay Archives of Antiquity
+                </span>
+                <h2 class="text-2xl sm:text-4xl font-extrabold font-sumerian-header text-amber-100 mb-3">
+                    Tactical Synthesizer & Military Index
+                </h2>
+                <p class="max-w-3xl mx-auto text-amber-200/90 text-sm sm:text-base leading-relaxed">
+                    Explore aggregated records, battlefield outcomes, and decade timelines of historical commanders recorded across centuries of conflict.
+                </p>
+
+                <!-- Search & Filters Toolbar -->
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-12 gap-3 max-w-4xl mx-auto text-left">
+                    <!-- General Name Search -->
+                    <div class="md:col-span-5 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-amber-400/70"></i>
+                        <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Search General (e.g. Napoleon, Caesar, Hannibal)..."
+                            class="w-full pl-10 pr-4 py-2.5 rounded-lg clay-input text-sm">
+                    </div>
+
+                    <!-- Filter by Nation -->
+                    <div class="md:col-span-3">
+                        <select id="nationFilter" onchange="applyFilters()" class="w-full px-3 py-2.5 rounded-lg clay-input text-sm">
+                            <option value="ALL">All Nations</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter by Battle Type -->
+                    <div class="md:col-span-2">
+                        <select id="typeFilter" onchange="applyFilters()" class="w-full px-3 py-2.5 rounded-lg clay-input text-sm">
+                            <option value="ALL">All Types</option>
+                            <option value="Land Battle">Land Battle</option>
+                            <option value="Skirmish">Skirmish</option>
+                            <option value="Ambush">Ambush</option>
+                            <option value="Naval battle">Naval battle</option>
+                            <option value="Air Battle">Air Battle</option>
+                            <option value="Siege">Siege</option>
+                            <option value="Raid">Raid</option>
+                        </select>
+                    </div>
+
+                    <!-- Compact Mode Toggle for High Row Counts (e.g. 300 rows simulation) -->
+                    <div class="md:col-span-2 flex items-center justify-end">
+                        <button id="compactToggleBtn" onclick="toggleCompactMode()" class="w-full h-full px-3 py-2 bg-amber-950/80 hover:bg-amber-900 border border-amber-600/50 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition">
+                            <i class="fa-solid fa-list-ul"></i>
+                            <span id="compactBtnText">Compact View</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GENERAL SYNTHESIS & FEATURED COMMANDER PANEL -->
+            <div id="generalSynthesisContainer" class="hidden">
+                <!-- Dynamically injected synthesized career statistics -->
+            </div>
+
+            <!-- CONTROLS & TIMELINE TABS -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-amber-900/50 pb-4">
+                <div class="flex items-center space-x-2">
+                    <h3 class="text-xl font-bold font-sumerian-header text-amber-200">
+                        Historical Battle Catalog
+                    </h3>
+                    <span id="recordCountBadge" class="clay-badge text-amber-300 text-xs px-2.5 py-1 rounded-full font-mono">
+                        0 Battles
+                    </span>
+                </div>
+
+                <!-- Grouping / View Tabs -->
+                <div class="flex items-center space-x-2 text-xs">
+                    <button onclick="setGrouping('all')" id="groupAllBtn" class="px-3 py-1.5 rounded-md bg-amber-700 text-amber-100 font-bold border border-amber-500">
+                        All Entries
+                    </button>
+                    <button onclick="setGrouping('era')" id="groupEraBtn" class="px-3 py-1.5 rounded-md bg-amber-950/60 text-amber-300 hover:bg-amber-900 border border-amber-800">
+                        Group by Era/Decade
+                    </button>
+                    <button onclick="setGrouping('nation')" id="groupNationBtn" class="px-3 py-1.5 rounded-md bg-amber-950/60 text-amber-300 hover:bg-amber-900 border border-amber-800">
+                        Group by Nation
+                    </button>
+                </div>
+            </div>
+
+            <!-- BATTLES CONTAINER / GRID -->
+            <div id="battlesDisplayArea">
+                <!-- Grid of Clay Tablets or Grouped Sections -->
+            </div>
+
+        </section>
+
+
+        <!-- ========================================================================= -->
+        <!-- EDITING SCREEN (FRENCH NAPOLEONIC DISPATCH AESTHETIC)                      -->
+        <!-- ========================================================================= -->
+        <section id="editScreen" class="hidden max-w-4xl mx-auto">
+            
+            <div class="napoleon-card p-6 sm:p-10 rounded-lg">
+                <!-- Decorative Imperial Top Bar -->
+                <div class="flex items-center justify-between border-b-2 border-amber-600/40 pb-4 mb-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="wax-seal text-xl">
+                            <i class="fa-solid fa-crown"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase font-bold tracking-widest text-amber-800">Grande Armée • Imperial Registry</span>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold font-napoleon-header text-slate-900">
+                                War Dispatch & General Entry Form
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="hidden sm:block text-right">
+                        <div class="font-napoleon-script text-2xl text-amber-900">Bureaux de la Guerre</div>
+                        <div class="text-xs text-slate-500 font-serif">Anno Domini 1805</div>
+                    </div>
+                </div>
+
+                <p class="text-sm text-slate-700 mb-8 italic font-serif">
+                    "Commanders of history earn their renown upon the field. Transcribe a new tactical record into the official high-command ledger below."
+                </p>
+
+                <!-- THE FORM -->
+                <form id="battleForm" onsubmit="handleFormSubmit(event)" class="space-y-6">
+                    
+                    <!-- Row 1: Username & General Name -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                <i class="fa-solid fa-user-pen mr-1 text-amber-700"></i> Contributor Username <span class="text-red-600">*</span>
+                            </label>
+                            <input type="text" id="inputUsername" maxlength="500" placeholder="e.g. APoorva_HistoryBuff"
+                                class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
+                            <p class="text-xs text-slate-500 mt-1">Accepts up to 500 characters</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                <i class="fa-solid fa-user-shield mr-1 text-amber-700"></i> General Name <span class="text-red-600">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="inputGeneralName" list="existingGeneralsList" maxlength="500" placeholder="e.g. Napoleon Bonaparte, Saint Sarkis"
+                                    class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
+                                <datalist id="existingGeneralsList">
+                                    <!-- Populated via JS -->
+                                </datalist>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">Select an existing general or enter a new one</p>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Nationality & Battle Location -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                <i class="fa-solid fa-flag mr-1 text-amber-700"></i> Nationality / Empire <span class="text-red-600">*</span>
+                            </label>
+                            <input type="text" id="inputNationality" maxlength="500" placeholder="e.g. France, Macedon, Carthage, Rome"
+                                class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                <i class="fa-solid fa-location-dot mr-1 text-amber-700"></i> Battle Location <span class="text-red-600">*</span>
+                            </label>
+                            <input type="text" id="inputLocation" maxlength="500" placeholder="e.g. Austerlitz (Moravia), Cannae, Yarmouk"
+                                class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Battle Type & Outcome (Pick from lists) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                <i class="fa-solid fa-burst mr-1 text-amber-700"></i> Engagement Type (Pick List) <span class="text-red-600">*</span>
+                            </label>
+                            <select id="inputBattleType" class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
+                                <option value="">-- Select Engagement Type --</option>
+                                <option value="Land Battle">Land Battle</option>
+                                <option value="Skirmish">Skirmish</option>
+                                <option value="Ambush">Ambush</option>
+                                <option value="Naval battle">Naval battle</option>
+                                <option value="Air Battle">Air Battle</option>
+                                <option value="Siege">Siege</option>
+                                <option value="Raid">Raid</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                <i class="fa-solid fa-trophy mr-1 text-amber-700"></i> Battle Outcome (Pick List) <span class="text-red-600">*</span>
+                            </label>
+                            <select id="inputOutcome" class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
+                                <option value="">-- Select Outcome --</option>
+                                <option value="Major victory">Major victory</option>
+                                <option value="Minor victory">Minor victory</option>
+                                <option value="Major loss">Major loss</option>
+                                <option value="Minor loss">Minor loss</option>
+                                <option value="Stalemate">Stalemate</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Dates & Duration -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                <i class="fa-solid fa-calendar-days mr-1 text-amber-700"></i> Dates / Era <span class="text-red-600">*</span>
+                            </label>
+                            <input type="text" id="inputDates" maxlength="500" placeholder="e.g. Dec 2, 1805 AD or 331 BC"
+                                class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                <i class="fa-solid fa-stopwatch mr-1 text-amber-700"></i> Battle Duration <span class="text-red-600">*</span>
+                            </label>
+                            <input type="text" id="inputDuration" maxlength="500" placeholder="e.g. 9 hours, 3 days, 7 months"
+                                class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
+                        </div>
+                    </div>
+
+                    <!-- Submission Action Buttons -->
+                    <div class="pt-6 border-t border-amber-600/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <button type="button" onclick="clearForm()" class="w-full sm:w-auto px-6 py-2.5 rounded border border-slate-400 text-slate-700 hover:bg-slate-200 transition text-sm font-semibold">
+                            <i class="fa-solid fa-eraser mr-1"></i> Clear Form
+                        </button>
+                        <button type="submit" class="w-full sm:w-auto px-8 py-3 rounded bg-amber-800 hover:bg-amber-900 text-amber-100 font-bold shadow-lg border border-amber-500 transition flex items-center justify-center space-x-2 text-base">
+                            <i class="fa-solid fa-file-signature"></i>
+                            <span>Seal & Dispatch Record</span>
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- INLINE NOTIFICATION / REJECTION MODAL (No alert() used) -->
+    <div id="alertModal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden p-4">
+        <div class="max-w-md w-full bg-stone-900 border-2 border-red-600 rounded-xl p-6 text-amber-100 shadow-2xl relative">
+            <div class="flex items-center space-x-3 text-red-500 mb-4">
+                <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
+                <h3 class="text-xl font-bold font-sumerian-header">Submission Rejected</h3>
+            </div>
+            <p id="alertModalMessage" class="text-sm text-stone-300 mb-6 leading-relaxed">
+                The high-command ledger rejects empty dispatches. Please fill out all battle details before sealing.
+            </p>
+            <div class="text-right">
+                <button onclick="closeAlertModal()" class="px-5 py-2 rounded bg-red-800 hover:bg-red-700 text-white text-sm font-bold shadow">
+                    Acknowledge
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // =========================================================================
+        // === DEFAULT MOCK DATASET (SWAPPABLE FOR REAL DATABASE IN THE FUTURE)  ===
+        // =========================================================================
+        const INITIAL_MOCK_BATTLES = [
+            {
+                username: "ImperialArchivist",
+                general_name: "Napoleon Bonaparte",
+                nationality: "France",
+                battle_type: "Land Battle",
+                outcome: "Major victory",
+                location: "Austerlitz (Moravia)",
+                duration: "9 Hours",
+                dates: "Dec 2, 1805 AD"
+            },
+            {
+                username: "CarthageScholar",
+                general_name: "Hannibal Barca",
+                nationality: "Carthage",
+                battle_type: "Ambush",
+                outcome: "Major victory",
+                location: "Cannae (Italy)",
+                duration: "1 Day",
+                dates: "Aug 2, 216 BC"
+            },
+            {
+                username: "NileTactics",
+                general_name: "Julius Caesar",
+                nationality: "Rome",
+                battle_type: "Siege",
+                outcome: "Major victory",
+                location: "Alesia (Gaul)",
+                duration: "2 Months",
+                dates: "52 BC"
+            },
+            {
+                username: "ImperialArchivist",
+                general_name: "Napoleon Bonaparte",
+                nationality: "France",
+                battle_type: "Land Battle",
+                outcome: "Major loss",
+                location: "Waterloo (Belgium)",
+                duration: "1 Day",
+                dates: "June 18, 1815 AD"
+            },
+            {
+                username: "ImperialArchivist",
+                general_name: "Napoleon Bonaparte",
+                nationality: "France",
+                battle_type: "Land Battle",
+                outcome: "Major victory",
+                location: "Jena-Auerstedt (Prussia)",
+                duration: "1 Day",
+                dates: "Oct 14, 1806 AD"
+            },
+            {
+                username: "CarthageScholar",
+                general_name: "Hannibal Barca",
+                nationality: "Carthage",
+                battle_type: "Land Battle",
+                outcome: "Major loss",
+                location: "Zama (Numidia)",
+                duration: "1 Day",
+                dates: "202 BC"
+            },
+            {
+                username: "NileTactics",
+                general_name: "Julius Caesar",
+                nationality: "Rome",
+                battle_type: "Land Battle",
+                outcome: "Major victory",
+                location: "Pharsalus (Greece)",
+                duration: "1 Day",
+                dates: "Aug 9, 48 BC"
+            },
+            {
+                username: "ImperialArchivist",
+                general_name: "Napoleon Bonaparte",
+                nationality: "France",
+                battle_type: "Land Battle",
+                outcome: "Stalemate",
+                location: "Borodino (Russia)",
+                duration: "1 Day",
+                dates: "Sept 7, 1812 AD"
+            }
+        ];
+
+        // State variables
+        let appData = [...INITIAL_MOCK_BATTLES];
+        let currentTab = 'view';
+        let currentGrouping = 'all'; // 'all', 'era', 'nation'
+        let isCompactView = false;
+
+        // Initialize App on DOM ready
+        window.addEventListener('DOMContentLoaded', () => {
+            populateDatalist();
+            populateNationFilter();
+            renderViewScreen();
+        });
+
+        // Switch between Clay Tablet Viewing Screen & Napoleonic Editing Screen
+        function switchTab(tabName) {
+            currentTab = tabName;
+            const body = document.getElementById('appBody');
+            const header = document.getElementById('mainHeader');
+            const viewScreen = document.getElementById('viewScreen');
+            const editScreen = document.getElementById('editScreen');
+            const navViewBtn = document.getElementById('navViewBtn');
+            const navEditBtn = document.getElementById('navEditBtn');
+            const headerTitle = document.getElementById('headerTitle');
+            const headerSubtitle = document.getElementById('headerSubtitle');
+            const headerIcon = document.getElementById('headerIcon');
+
+            if (tabName === 'view') {
+                // Clay Sumerian Theme
+                body.className = "theme-clay min-h-screen transition-colors duration-500 pb-16";
+                header.className = "sticky top-0 z-40 backdrop-blur-md bg-opacity-95 bg-[#1f130b] border-b border-amber-900/60 shadow-xl transition-colors duration-500";
+                
+                navViewBtn.className = "px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 bg-amber-700 text-amber-100 shadow-inner border border-amber-500";
+                navEditBtn.className = "px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 text-amber-300 hover:bg-amber-950/50";
+
+                headerTitle.innerText = "GENERALS EMPORIUM";
+                headerTitle.className = "text-xl sm:text-2xl font-bold font-sumerian-header tracking-wider text-amber-200";
+                headerSubtitle.innerText = "Ancient Sumerian Clay Archive View";
+                headerIcon.className = "w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md border bg-amber-900/80 border-amber-600 text-amber-300";
+                headerIcon.innerHTML = `<i class="fa-solid fa-monument"></i>`;
+
+                viewScreen.classList.remove('hidden');
+                editScreen.classList.add('hidden');
+                renderViewScreen();
+            } else {
+                // French Napoleonic Dispatch Theme
+                body.className = "theme-napoleon min-h-screen transition-colors duration-500 pb-16";
+                header.className = "sticky top-0 z-40 backdrop-blur-md bg-opacity-95 bg-[#1b263b] text-slate-100 border-b border-amber-500/50 shadow-xl transition-colors duration-500";
+
+                navViewBtn.className = "px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 text-slate-300 hover:bg-slate-800";
+                navEditBtn.className = "px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 bg-amber-600 text-white shadow-inner border border-amber-400";
+
+                headerTitle.innerText = "GRANDE ARMÉE DISPATCH";
+                headerTitle.className = "text-xl sm:text-2xl font-bold font-napoleon-header tracking-wider text-amber-300";
+                headerSubtitle.innerText = "Napoleonic Imperial Dispatch Bureau";
+                headerIcon.className = "w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md border bg-red-900 border-amber-400 text-amber-300";
+                headerIcon.innerHTML = `<i class="fa-solid fa-feather-pointed"></i>`;
+
+                viewScreen.classList.add('hidden');
+                editScreen.classList.remove('hidden');
+            }
+        }
+
+        function applyFilters() {
+            renderViewScreen();
+        }
+
+        function setGrouping(groupType) {
+            currentGrouping = groupType;
+            
+            // Highlight active tab
+            ['All', 'Era', 'Nation'].forEach(type => {
+                const btn = document.getElementById(`group${type}Btn`);
+                if (type.toLowerCase() === groupType) {
+                    btn.className = "px-3 py-1.5 rounded-md bg-amber-700 text-amber-100 font-bold border border-amber-500 shadow";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-md bg-amber-950/60 text-amber-300 hover:bg-amber-900 border border-amber-800";
+                }
+            });
+
+            renderViewScreen();
+        }
+
+        function toggleCompactMode() {
+            isCompactView = !isCompactView;
+            const btnText = document.getElementById('compactBtnText');
+            btnText.innerText = isCompactView ? "Card View" : "Compact View";
+            renderViewScreen();
+        }
+
+        // Main Rendering Logic for View Screen
+        function renderViewScreen() {
+            const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+            const nationVal = document.getElementById('nationFilter').value;
+            const typeVal = document.getElementById('typeFilter').value;
+
+            // Filter rows
+            let filtered = appData.filter(item => {
+                const matchesSearch = item.general_name.toLowerCase().includes(searchVal) || 
+                                      item.location.toLowerCase().includes(searchVal) ||
+                                      item.nationality.toLowerCase().includes(searchVal);
+                const matchesNation = nationVal === 'ALL' || item.nationality === nationVal;
+                const matchesType = typeVal === 'ALL' || item.battle_type === typeVal;
+                return matchesSearch && matchesNation && matchesType;
+            });
+
+            // Update Badge Count
+            document.getElementById('recordCountBadge').innerText = `${filtered.length} Battle${filtered.length === 1 ? '' : 's'}`;
+
+            // 1. Synthesize General Profile if search corresponds to a specific general or single general remains
+            renderGeneralSynthesis(filtered, searchVal);
+
+            // 2. Render Battles List or Groupings
+            const displayArea = document.getElementById('battlesDisplayArea');
+
+            // Handle Empty State (Required Awkward Case Handling)
+            if (filtered.length === 0) {
+                displayArea.innerHTML = `
+                    <div class="clay-card p-10 text-center my-8">
+                        <div class="text-6xl text-amber-500/40 mb-4">
+                            <i class="fa-solid fa-scroll font-cuneiform-subtle"></i>
+                        </div>
+                        <h4 class="text-2xl font-bold font-sumerian-header text-amber-200 mb-2">
+                            Imagine this says Alexander the Great's Opis speech.
+                        </h4>
+                        <p class="text-sm text-amber-300/80 max-w-md mx-auto">
+                            No matching military dispatches found in the current clay archives. Try broadening your search or switching filters.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render based on Grouping Mode
+            if (currentGrouping === 'era') {
+                renderGroupedByEra(filtered, displayArea);
+            } else if (currentGrouping === 'nation') {
+                renderGroupedByNation(filtered, displayArea);
+            } else {
+                // All entries standard grid
+                renderBattleGrid(filtered, displayArea);
+            }
+        }
+
+        // Synthesize Career Information for targeted Generals
+        function renderGeneralSynthesis(filteredRows, searchVal) {
+            const container = document.getElementById('generalSynthesisContainer');
+
+            // Find unique generals present in filtered result
+            const generalsFound = [...new Set(filteredRows.map(r => r.general_name))];
+
+            if (generalsFound.length === 1 || (searchVal && generalsFound.length <= 3)) {
+                const targetGeneral = generalsFound[0];
+                const genBattles = appData.filter(b => b.general_name === targetGeneral);
+                const wins = genBattles.filter(b => b.outcome.includes('victory')).length;
+                const losses = genBattles.filter(b => b.outcome.includes('loss')).length;
+                const stalemates = genBattles.filter(b => b.outcome === 'Stalemate').length;
+                const winRate = Math.round((wins / genBattles.length) * 100);
+                const nations = [...new Set(genBattles.map(b => b.nationality))].join(', ');
+
+                container.classList.remove('hidden');
+                container.innerHTML = `
+                    <div class="clay-card p-6 border-2 border-amber-500/60 shadow-2xl mb-6">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-amber-800/80 pb-4 mb-4">
+                            <div>
+                                <span class="text-xs text-amber-400 font-mono tracking-widest uppercase">
+                                    <i class="fa-solid fa-award mr-1"></i> Synthesized Career Profile
+                                </span>
+                                <h3 class="text-2xl sm:text-3xl font-extrabold font-sumerian-header text-amber-100">
+                                    ${targetGeneral}
+                                </h3>
+                                <div class="text-xs text-amber-300/80 flex items-center space-x-3 mt-1">
+                                    <span><i class="fa-solid fa-flag mr-1"></i> ${nations}</span>
+                                    <span>•</span>
+                                    <span><i class="fa-solid fa-shield-halved mr-1"></i> ${genBattles.length} Logged Engagement(s)</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-center px-4 py-2 bg-amber-950/80 border border-amber-700/60 rounded-lg">
+                                    <div class="text-2xl font-black text-amber-300 font-mono">${winRate}%</div>
+                                    <div class="text-[10px] uppercase text-amber-400">Win Rate</div>
+                                </div>
+                                <div class="text-center px-4 py-2 bg-amber-950/80 border border-amber-700/60 rounded-lg">
+                                    <div class="text-2xl font-black text-emerald-400 font-mono">${wins}W / ${losses}L</div>
+                                    <div class="text-[10px] uppercase text-amber-400">Victories / Losses</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Synthesized Tactical Breakdown Bar -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs text-amber-200">
+                                <span>Tactical Outcome Synthesis</span>
+                                <span>${wins} Victories • ${stalemates} Stalemates • ${losses} Losses</span>
+                            </div>
+                            <div class="h-3 w-full bg-amber-950 rounded-full overflow-hidden flex border border-amber-800">
+                                <div style="width: ${(wins/genBattles.length)*100}%" class="bg-emerald-600 h-full" title="Victories"></div>
+                                <div style="width: ${(stalemates/genBattles.length)*100}%" class="bg-amber-500 h-full" title="Stalemates"></div>
+                                <div style="width: ${(losses/genBattles.length)*100}%" class="bg-red-600 h-full" title="Losses"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+            }
+        }
+
+        // Render Battles standard grid or compact list
+        function renderBattleGrid(rows, targetEl) {
+            if (isCompactView || rows.length >= 25) {
+                // Compact View Mode (Required for 300 rows awkward case handling)
+                let tableHtml = `
+                    <div class="clay-card overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b border-amber-800 bg-amber-950/80 text-amber-300 font-sumerian-header">
+                                    <th class="p-3">General</th>
+                                    <th class="p-3">Location / Battle</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Outcome</th>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Nation</th>
+                                    <th class="p-3">Logged By</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-amber-900/40">
+                `;
+                rows.forEach(r => {
+                    const outcomeColor = r.outcome.includes('victory') ? 'text-emerald-400 font-semibold' : 
+                                         r.outcome.includes('loss') ? 'text-red-400 font-semibold' : 'text-amber-400';
+                    tableHtml += `
+                        <tr class="hover:bg-amber-900/30 transition">
+                            <td class="p-3 font-bold text-amber-100">${escapeHtml(r.general_name)}</td>
+                            <td class="p-3 text-amber-200">${escapeHtml(r.location)}</td>
+                            <td class="p-3"><span class="clay-badge px-2 py-0.5 rounded text-[11px]">${escapeHtml(r.battle_type)}</span></td>
+                            <td class="p-3 ${outcomeColor}">${escapeHtml(r.outcome)}</td>
+                            <td class="p-3 font-mono text-amber-300/80">${escapeHtml(r.dates)}</td>
+                            <td class="p-3 text-amber-300">${escapeHtml(r.nationality)}</td>
+                            <td class="p-3 text-amber-400/60 text-xs">@${escapeHtml(r.username)}</td>
+                        </tr>
+                    `;
+                });
+                tableHtml += `</tbody></table></div>`;
+                targetEl.innerHTML = tableHtml;
+            } else {
+                // Standard Clay Tablet Grid
+                let gridHtml = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+                rows.forEach(r => {
+                    const outcomeBadge = r.outcome.includes('victory') ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/60' :
+                                         r.outcome.includes('loss') ? 'bg-red-950/80 text-red-300 border-red-600/60' :
+                                         'bg-amber-950/80 text-amber-300 border-amber-600/60';
+
+                    gridHtml += `
+                        <div class="clay-card p-5 flex flex-col justify-between hover:scale-[1.01] transition-transform">
+                            <div>
+                                <!-- General & Nation Header -->
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <h4 class="font-bold text-lg text-amber-100 font-sumerian-header leading-snug">
+                                            ${escapeHtml(r.general_name)}
+                                        </h4>
+                                        <div class="text-xs text-amber-300/80 font-mono">
+                                            <i class="fa-solid fa-flag mr-1 text-amber-500"></i>${escapeHtml(r.nationality)}
+                                        </div>
+                                    </div>
+                                    <span class="clay-badge px-2.5 py-1 rounded text-xs font-semibold text-amber-200">
+                                        ${escapeHtml(r.battle_type)}
+                                    </span>
+                                </div>
+
+                                <!-- Battle Details -->
+                                <div class="space-y-2 my-4 text-xs sm:text-sm bg-black/20 p-3 rounded-lg border border-amber-900/40">
+                                    <div class="flex justify-between">
+                                        <span class="text-amber-400/80">Location:</span>
+                                        <span class="font-semibold text-amber-100 text-right">${escapeHtml(r.location)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-amber-400/80">Dates:</span>
+                                        <span class="font-mono text-amber-200">${escapeHtml(r.dates)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-amber-400/80">Duration:</span>
+                                        <span class="text-amber-200">${escapeHtml(r.duration)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Outcome & Scribe -->
+                            <div class="pt-3 border-t border-amber-900/50 flex items-center justify-between text-xs">
+                                <span class="px-2.5 py-1 rounded border ${outcomeBadge} font-bold">
+                                    ${escapeHtml(r.outcome)}
+                                </span>
+                                <span class="text-amber-400/60 italic" title="Recorded by ${escapeHtml(r.username)}">
+                                    <i class="fa-solid fa-pen-nib mr-1"></i>${escapeHtml(r.username)}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+                gridHtml += `</div>`;
+                targetEl.innerHTML = gridHtml;
+            }
+        }
+
+        // Era/Decade Grouping Logic
+        function renderGroupedByEra(rows, targetEl) {
+            // Helper to parse rough decade or era key
+            const getEraKey = (dateStr) => {
+                if (dateStr.includes('BC')) {
+                    return "Ancient Era (BC)";
+                }
+                const match = dateStr.match(/\b(1[0-9]{3}|20[0-9]{2}|[0-9]{3})\b/);
+                if (match) {
+                    const year = parseInt(match[0]);
+                    const decade = Math.floor(year / 10) * 10;
+                    return `${decade}s AD`;
+                }
+                return "Historical Eras";
+            };
+
+            const groups = {};
+            rows.forEach(r => {
+                const era = getEraKey(r.dates);
+                if (!groups[era]) groups[era] = [];
+                groups[era].push(r);
+            });
+
+            let html = `<div class="space-y-8">`;
+            Object.keys(groups).sort().forEach(eraName => {
+                html += `
+                    <div class="clay-card p-6">
+                        <h4 class="text-xl font-bold font-sumerian-header text-amber-200 border-b border-amber-700/60 pb-2 mb-4 flex items-center space-x-2">
+                            <i class="fa-solid fa-hourglass-half text-amber-500 text-sm"></i>
+                            <span>${eraName}</span>
+                            <span class="text-xs font-mono text-amber-400 opacity-75">(${groups[eraName].length} Records)</span>
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${groups[eraName].map(b => `
+                                <div class="bg-amber-950/60 p-3 rounded-lg border border-amber-800/60 flex justify-between items-center text-xs sm:text-sm">
+                                    <div>
+                                        <div class="font-bold text-amber-100">${escapeHtml(b.general_name)}</div>
+                                        <div class="text-amber-300/80">${escapeHtml(b.location)} (${escapeHtml(b.dates)})</div>
+                                    </div>
+                                    <span class="clay-badge px-2 py-1 rounded text-[11px] font-semibold text-amber-200">${escapeHtml(b.outcome)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            targetEl.innerHTML = html;
+        }
+
+        // Nation Grouping Logic
+        function renderGroupedByNation(rows, targetEl) {
+            const groups = {};
+            rows.forEach(r => {
+                const nation = r.nationality || "Unknown Empire";
+                if (!groups[nation]) groups[nation] = [];
+                groups[nation].push(r);
+            });
+
+            let html = `<div class="space-y-8">`;
+            Object.keys(groups).sort().forEach(nation => {
+                html += `
+                    <div class="clay-card p-6">
+                        <h4 class="text-xl font-bold font-sumerian-header text-amber-200 border-b border-amber-700/60 pb-2 mb-4 flex items-center space-x-2">
+                            <i class="fa-solid fa-flag text-amber-500 text-sm"></i>
+                            <span>${nation}</span>
+                            <span class="text-xs font-mono text-amber-400 opacity-75">(${groups[nation].length} Records)</span>
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${groups[nation].map(b => `
+                                <div class="bg-amber-950/60 p-3 rounded-lg border border-amber-800/60 flex justify-between items-center text-xs sm:text-sm">
+                                    <div>
+                                        <div class="font-bold text-amber-100">${escapeHtml(b.general_name)}</div>
+                                        <div class="text-amber-300/80">${escapeHtml(b.location)} - ${escapeHtml(b.battle_type)}</div>
+                                    </div>
+                                    <span class="clay-badge px-2 py-1 rounded text-[11px] font-semibold text-amber-200">${escapeHtml(b.outcome)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            targetEl.innerHTML = html;
+        }
+
+        // Populate form datalist and dropdown filters dynamically
+        function populateDatalist() {
+            const datalist = document.getElementById('existingGeneralsList');
+            const uniqueGenerals = [...new Set(appData.map(b => b.general_name))];
+            datalist.innerHTML = uniqueGenerals.map(g => `<option value="${escapeHtml(g)}">`).join('');
+        }
+
+        function populateNationFilter() {
+            const select = document.getElementById('nationFilter');
+            const uniqueNations = [...new Set(appData.map(b => b.nationality))].sort();
+            select.innerHTML = `<option value="ALL">All Nations</option>` + 
+                uniqueNations.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+        }
+
+        // Form Submit Handler
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('inputUsername').value.trim();
+            const general_name = document.getElementById('inputGeneralName').value.trim();
+            const nationality = document.getElementById('inputNationality').value.trim();
+            const location = document.getElementById('inputLocation').value.trim();
+            const battle_type = document.getElementById('inputBattleType').value;
+            const outcome = document.getElementById('inputOutcome').value;
+            const dates = document.getElementById('inputDates').value.trim();
+            const duration = document.getElementById('inputDuration').value.trim();
+
+            // Awkward Case Handling: Empty submission validation
+            if (!username && !general_name && !nationality && !location && !battle_type && !outcome && !dates && !duration) {
+                showAlertModal("The dispatch form is completely empty! Please fill out the required battle details before sealing the ledger.");
+                return;
+            }
+
+            if (!username || !general_name || !nationality || !location || !battle_type || !outcome || !dates || !duration) {
+                showAlertModal("Please complete all required fields in the imperial ledger.");
+                return;
+            }
+
+            // Create new record object
+            const newRecord = {
+                username,
+                general_name,
+                nationality,
+                battle_type,
+                outcome,
+                location,
+                duration,
+                dates
+            };
+
+            // Add to in-memory state
+            appData.unshift(newRecord);
+
+            // Re-populate filters and datalist
+            populateDatalist();
+            populateNationFilter();
+
+            // Clear form
+            clearForm();
+
+            // Switch to viewing tab to show newly added row
+            switchTab('view');
+        }
+
+        function clearForm() {
+            document.getElementById('battleForm').reset();
+        }
+
+        // Modal alert functions (No alert() used)
+        function showAlertModal(msg) {
+            document.getElementById('alertModalMessage').innerText = msg;
+            document.getElementById('alertModal').classList.remove('hidden');
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alertModal').classList.add('hidden');
+        }
+
+        // Helper to escape HTML string attributes safely
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
