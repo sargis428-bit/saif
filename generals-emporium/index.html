@@ -12,6 +12,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700&family=Great+Vibes&family=Marcellus&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=UnifrakturMaguntika&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         /* === THEME 1: ANCIENT SUMERIAN CLAY TABLET (VIEWING MODE) === */
@@ -456,103 +458,37 @@
 
 
     <script>
-        // =========================================================================
-        // === DEFAULT MOCK DATASET (SWAPPABLE FOR REAL DATABASE IN THE FUTURE)  ===
-        // =========================================================================
-        const INITIAL_MOCK_BATTLES = [
-            {
-                username: "ImperialArchivist",
-                general_name: "Napoleon Bonaparte",
-                nationality: "France",
-                battle_type: "Land Battle",
-                outcome: "Major victory",
-                location: "Austerlitz (Moravia)",
-                duration: "9 Hours",
-                dates: "Dec 2, 1805 AD"
-            },
-            {
-                username: "CarthageScholar",
-                general_name: "Hannibal Barca",
-                nationality: "Carthage",
-                battle_type: "Ambush",
-                outcome: "Major victory",
-                location: "Cannae (Italy)",
-                duration: "1 Day",
-                dates: "Aug 2, 216 BC"
-            },
-            {
-                username: "NileTactics",
-                general_name: "Julius Caesar",
-                nationality: "Rome",
-                battle_type: "Siege",
-                outcome: "Major victory",
-                location: "Alesia (Gaul)",
-                duration: "2 Months",
-                dates: "52 BC"
-            },
-            {
-                username: "ImperialArchivist",
-                general_name: "Napoleon Bonaparte",
-                nationality: "France",
-                battle_type: "Land Battle",
-                outcome: "Major loss",
-                location: "Waterloo (Belgium)",
-                duration: "1 Day",
-                dates: "June 18, 1815 AD"
-            },
-            {
-                username: "ImperialArchivist",
-                general_name: "Napoleon Bonaparte",
-                nationality: "France",
-                battle_type: "Land Battle",
-                outcome: "Major victory",
-                location: "Jena-Auerstedt (Prussia)",
-                duration: "1 Day",
-                dates: "Oct 14, 1806 AD"
-            },
-            {
-                username: "CarthageScholar",
-                general_name: "Hannibal Barca",
-                nationality: "Carthage",
-                battle_type: "Land Battle",
-                outcome: "Major loss",
-                location: "Zama (Numidia)",
-                duration: "1 Day",
-                dates: "202 BC"
-            },
-            {
-                username: "NileTactics",
-                general_name: "Julius Caesar",
-                nationality: "Rome",
-                battle_type: "Land Battle",
-                outcome: "Major victory",
-                location: "Pharsalus (Greece)",
-                duration: "1 Day",
-                dates: "Aug 9, 48 BC"
-            },
-            {
-                username: "ImperialArchivist",
-                general_name: "Napoleon Bonaparte",
-                nationality: "France",
-                battle_type: "Land Battle",
-                outcome: "Stalemate",
-                location: "Borodino (Russia)",
-                duration: "1 Day",
-                dates: "Sept 7, 1812 AD"
-            }
-        ];
+        // Initialize Supabase Client
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // State variables
-        let appData = [...INITIAL_MOCK_BATTLES];
+        let appData = [];
         let currentTab = 'view';
         let currentGrouping = 'all'; // 'all', 'era', 'nation'
         let isCompactView = false;
 
+        // Fetch Data from Supabase
+        async function fetchBattles() {
+            try {
+                const { data, error } = await supabase.from('battles').select('*');
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    appData = data;
+                }
+            } catch (err) {
+                console.error("Error fetching battles from Supabase:", err.message);
+            } finally {
+                populateDatalist();
+                populateNationFilter();
+                renderViewScreen();
+            }
+        }
+
         // Initialize App on DOM ready
         window.addEventListener('DOMContentLoaded', () => {
-            populateDatalist();
-            populateNationFilter();
-            renderViewScreen();
+            fetchBattles();
         });
 
         // Switch between Clay Tablet Viewing Screen & Napoleonic Editing Screen
@@ -948,7 +884,7 @@
         }
 
         // Form Submit Handler
-        function handleFormSubmit(event) {
+        async function handleFormSubmit(event) {
             event.preventDefault();
 
             const username = document.getElementById('inputUsername').value.trim();
@@ -983,8 +919,19 @@
                 dates
             };
 
-            // Add to in-memory state
-            appData.unshift(newRecord);
+            // Insert into Supabase
+            try {
+                const { data, error } = await supabase.from('battles').insert([newRecord]).select();
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    appData.unshift(data[0]);
+                } else {
+                    appData.unshift(newRecord);
+                }
+            } catch (err) {
+                console.error("Error inserting record into Supabase:", err.message);
+                appData.unshift(newRecord);
+            }
 
             // Re-populate filters and datalist
             populateDatalist();
