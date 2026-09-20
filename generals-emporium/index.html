@@ -593,14 +593,43 @@
         let currentGrouping = 'all'; // 'all', 'era', 'nation'
         let isCompactView = false;
 
-        // Fetch Data from Supabase
+        // Fetch Data from Supabase Table: generals_emporium_items
         async function fetchBattles() {
             try {
                 if (supabaseClient) {
-                    const { data, error } = await supabaseClient.from('battles').select('*');
+                    const { data, error } = await supabaseClient.from('generals_emporium_items').select('*');
                     if (error) throw error;
                     if (data && data.length > 0) {
-                        appData = [...data, ...initialBattles];
+                        const parsedData = data.map(item => {
+                            try {
+                                const parsed = JSON.parse(item.description);
+                                if (parsed && typeof parsed === 'object') {
+                                    return {
+                                        username: parsed.username || 'Anonymous',
+                                        general_name: parsed.general_name || item.item_name || 'Unknown',
+                                        nationality: parsed.nationality || 'Unknown',
+                                        location: parsed.location || 'Unknown',
+                                        battle_type: parsed.battle_type || item.item_category || 'Land Battle',
+                                        outcome: parsed.outcome || 'Major victory',
+                                        dates: parsed.dates || 'Historical',
+                                        duration: parsed.duration || 'N/A'
+                                    };
+                                }
+                            } catch (e) {
+                                // Fallback if description text is not JSON stringified
+                            }
+                            return {
+                                username: 'Anonymous',
+                                general_name: item.item_name || 'Unknown',
+                                nationality: 'Unknown',
+                                location: 'Unknown',
+                                battle_type: item.item_category || 'Land Battle',
+                                outcome: 'Major victory',
+                                dates: 'Historical',
+                                duration: 'N/A'
+                            };
+                        });
+                        appData = [...parsedData, ...initialBattles];
                     }
                 }
             } catch (err) {
@@ -1043,16 +1072,20 @@
                 dates
             };
 
-            // Insert into Supabase if connected
+            const payload = {
+                project_id: 2,
+                item_name: general_name,
+                item_category: battle_type,
+                description: JSON.stringify(newRecord),
+                price: 0.00
+            };
+
+            // Insert into Supabase generals_emporium_items table if connected
             try {
                 if (supabaseClient) {
-                    const { data, error } = await supabaseClient.from('battles').insert([newRecord]).select();
+                    const { data, error } = await supabaseClient.from('generals_emporium_items').insert([payload]).select();
                     if (error) throw error;
-                    if (data && data.length > 0) {
-                        appData.unshift(data[0]);
-                    } else {
-                        appData.unshift(newRecord);
-                    }
+                    appData.unshift(newRecord);
                 } else {
                     appData.unshift(newRecord);
                 }
