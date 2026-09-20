@@ -179,7 +179,7 @@
             <div class="flex items-center space-x-2 bg-black/40 p-1.5 rounded-xl border border-white/10" id="tabContainer">
                 <button id="navViewBtn" onclick="switchTab('view')" class="px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 shadow-inner">
                     <i class="fa-solid fa-eye"></i>
-                    <span class="hidden md:inline">Viewing Screen</span>
+                    <span class="hidden md:inline">Viewing tab</span>
                     <span class="text-xs opacity-75 hidden lg:inline">(Clay Tablet)</span>
                 </button>
                 <button id="navEditBtn" onclick="switchTab('edit')" class="px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2">
@@ -244,7 +244,7 @@
                         </select>
                     </div>
 
-                    <!-- Compact Mode Toggle for High Row Counts (e.g. 300 rows simulation) -->
+                    <!-- Compact Mode Toggle for High Row Counts -->
                     <div class="md:col-span-2 flex items-center justify-end">
                         <button id="compactToggleBtn" onclick="toggleCompactMode()" class="w-full h-full px-3 py-2 bg-amber-950/80 hover:bg-amber-900 border border-amber-600/50 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition">
                             <i class="fa-solid fa-list-ul"></i>
@@ -438,7 +438,19 @@
 
     </main>
 
-    <!-- INLINE NOTIFICATION / REJECTION MODAL (No alert() used) -->
+    <!-- ENLARGED FOCUSED BATTLE MODAL WITH BLURRED BACKGROUND -->
+    <div id="battleModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 sm:p-6 transition-all duration-300" onclick="closeBattleModalOnBackdrop(event)">
+        <div id="battleModalContainer" class="clay-card max-w-2xl w-full p-6 sm:p-8 rounded-2xl shadow-2xl relative border-2 border-amber-500/80 max-h-[90vh] overflow-y-auto transform scale-95 transition-all duration-300">
+            <button onclick="closeBattleModal()" class="absolute top-4 right-4 text-amber-300 hover:text-white bg-amber-950/80 hover:bg-amber-900 border border-amber-600 rounded-full w-9 h-9 flex items-center justify-center transition shadow-lg">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div id="battleModalContent">
+                <!-- Injected dynamically when clicking a battle card -->
+            </div>
+        </div>
+    </div>
+
+    <!-- INLINE NOTIFICATION / REJECTION MODAL -->
     <div id="alertModal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden p-4">
         <div class="max-w-md w-full bg-stone-900 border-2 border-red-600 rounded-xl p-6 text-amber-100 shadow-2xl relative">
             <div class="flex items-center space-x-3 text-red-500 mb-4">
@@ -458,13 +470,125 @@
 
 
     <script>
-        // Initialize Supabase Client
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Initialize Supabase Client with User Key
+        const SUPABASE_URL = 'https://fnO6q510nPODeejDxMllw.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
+        
+        let supabaseClient = null;
+        try {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (err) {
+            console.warn("Supabase connection check:", err.message);
+        }
+
+        // 10 Major Historical Battles specifically from Vercingetorix, Erwin Rommel, Napoleon, Julius Caesar, and Hannibal
+        const initialBattles = [
+            {
+                username: "Gallic_Arverni",
+                general_name: "Vercingetorix",
+                nationality: "Gaul (Arverni)",
+                location: "Gergovia (Gaul)",
+                battle_type: "Siege",
+                outcome: "Major victory",
+                dates: "52 BC",
+                duration: "Several weeks"
+            },
+            {
+                username: "Gallic_Arverni",
+                general_name: "Vercingetorix",
+                nationality: "Gaul (Arverni)",
+                location: "Alesia (Gaul)",
+                battle_type: "Siege",
+                outcome: "Major loss",
+                dates: "Sep 52 BC",
+                duration: "2 months"
+            },
+            {
+                username: "Afrikakorps_Scribe",
+                general_name: "Erwin Rommel",
+                nationality: "Germany",
+                location: "Gazala (Libya)",
+                battle_type: "Land Battle",
+                outcome: "Major victory",
+                dates: "May 26 – Jun 21, 1942 AD",
+                duration: "26 days"
+            },
+            {
+                username: "Afrikakorps_Scribe",
+                general_name: "Erwin Rommel",
+                nationality: "Germany",
+                location: "Kasserine Pass (Tunisia)",
+                battle_type: "Land Battle",
+                outcome: "Major victory",
+                dates: "Feb 19-24, 1943 AD",
+                duration: "5 days"
+            },
+            {
+                username: "Imperial_Archivist",
+                general_name: "Napoleon Bonaparte",
+                nationality: "France",
+                location: "Austerlitz (Moravia)",
+                battle_type: "Land Battle",
+                outcome: "Major victory",
+                dates: "Dec 2, 1805 AD",
+                duration: "9 hours"
+            },
+            {
+                username: "Imperial_Archivist",
+                general_name: "Napoleon Bonaparte",
+                nationality: "France",
+                location: "Waterloo (Belgium)",
+                battle_type: "Land Battle",
+                outcome: "Major loss",
+                dates: "Jun 18, 1815 AD",
+                duration: "10 hours"
+            },
+            {
+                username: "Roman_Legates",
+                general_name: "Julius Caesar",
+                nationality: "Rome",
+                location: "Pharsalus (Greece)",
+                battle_type: "Land Battle",
+                outcome: "Major victory",
+                dates: "Aug 9, 48 BC",
+                duration: "1 day"
+            },
+            {
+                username: "Roman_Legates",
+                general_name: "Julius Caesar",
+                nationality: "Rome",
+                location: "Zela (Pontus)",
+                battle_type: "Land Battle",
+                outcome: "Major victory",
+                dates: "47 BC",
+                duration: "5 hours"
+            },
+            {
+                username: "Carthage_Strategist",
+                general_name: "Hannibal Barca",
+                nationality: "Carthage",
+                location: "Cannae (Apulia, Italy)",
+                battle_type: "Ambush",
+                outcome: "Major victory",
+                dates: "Aug 2, 216 BC",
+                duration: "12 hours"
+            },
+            {
+                username: "Carthage_Strategist",
+                general_name: "Hannibal Barca",
+                nationality: "Carthage",
+                location: "Lake Trasimene (Italy)",
+                battle_type: "Ambush",
+                outcome: "Major victory",
+                dates: "Jun 21, 217 BC",
+                duration: "3 hours"
+            }
+        ];
 
         // State variables
-        let appData = [];
+        let appData = [...initialBattles];
         let currentTab = 'view';
         let currentGrouping = 'all'; // 'all', 'era', 'nation'
         let isCompactView = false;
@@ -472,13 +596,15 @@
         // Fetch Data from Supabase
         async function fetchBattles() {
             try {
-                const { data, error } = await supabase.from('battles').select('*');
-                if (error) throw error;
-                if (data && data.length > 0) {
-                    appData = data;
+                if (supabaseClient) {
+                    const { data, error } = await supabaseClient.from('battles').select('*');
+                    if (error) throw error;
+                    if (data && data.length > 0) {
+                        appData = [...data, ...initialBattles];
+                    }
                 }
             } catch (err) {
-                console.error("Error fetching battles from Supabase:", err.message);
+                console.warn("Could not fetch remote battles from Supabase, operating with catalog:", err.message);
             } finally {
                 populateDatalist();
                 populateNationFilter();
@@ -586,13 +712,13 @@
             // Update Badge Count
             document.getElementById('recordCountBadge').innerText = `${filtered.length} Battle${filtered.length === 1 ? '' : 's'}`;
 
-            // 1. Synthesize General Profile if search corresponds to a specific general or single general remains
+            // 1. Synthesize General Profile if search corresponds to a specific general
             renderGeneralSynthesis(filtered, searchVal);
 
             // 2. Render Battles List or Groupings
             const displayArea = document.getElementById('battlesDisplayArea');
 
-            // Handle Empty State (Required Awkward Case Handling)
+            // Handle Empty State
             if (filtered.length === 0) {
                 displayArea.innerHTML = `
                     <div class="clay-card p-10 text-center my-8">
@@ -634,7 +760,7 @@
                 const wins = genBattles.filter(b => b.outcome.includes('victory')).length;
                 const losses = genBattles.filter(b => b.outcome.includes('loss')).length;
                 const stalemates = genBattles.filter(b => b.outcome === 'Stalemate').length;
-                const winRate = Math.round((wins / genBattles.length) * 100);
+                const winRate = Math.round((wins / genBattles.length) * 100) || 100;
                 const nations = [...new Set(genBattles.map(b => b.nationality))].join(', ');
 
                 container.classList.remove('hidden');
@@ -646,10 +772,10 @@
                                     <i class="fa-solid fa-award mr-1"></i> Synthesized Career Profile
                                 </span>
                                 <h3 class="text-2xl sm:text-3xl font-extrabold font-sumerian-header text-amber-100">
-                                    ${targetGeneral}
+                                    ${escapeHtml(targetGeneral)}
                                 </h3>
                                 <div class="text-xs text-amber-300/80 flex items-center space-x-3 mt-1">
-                                    <span><i class="fa-solid fa-flag mr-1"></i> ${nations}</span>
+                                    <span><i class="fa-solid fa-flag mr-1"></i> ${escapeHtml(nations)}</span>
                                     <span>•</span>
                                     <span><i class="fa-solid fa-shield-halved mr-1"></i> ${genBattles.length} Logged Engagement(s)</span>
                                 </div>
@@ -689,7 +815,7 @@
         // Render Battles standard grid or compact list
         function renderBattleGrid(rows, targetEl) {
             if (isCompactView || rows.length >= 25) {
-                // Compact View Mode (Required for 300 rows awkward case handling)
+                // Compact View Mode
                 let tableHtml = `
                     <div class="clay-card overflow-x-auto">
                         <table class="w-full text-left border-collapse text-xs sm:text-sm">
@@ -706,11 +832,11 @@
                             </thead>
                             <tbody class="divide-y divide-amber-900/40">
                 `;
-                rows.forEach(r => {
+                rows.forEach((r, idx) => {
                     const outcomeColor = r.outcome.includes('victory') ? 'text-emerald-400 font-semibold' : 
                                          r.outcome.includes('loss') ? 'text-red-400 font-semibold' : 'text-amber-400';
                     tableHtml += `
-                        <tr class="hover:bg-amber-900/30 transition">
+                        <tr onclick="openBattleModal(${idx})" class="hover:bg-amber-900/50 cursor-pointer transition">
                             <td class="p-3 font-bold text-amber-100">${escapeHtml(r.general_name)}</td>
                             <td class="p-3 text-amber-200">${escapeHtml(r.location)}</td>
                             <td class="p-3"><span class="clay-badge px-2 py-0.5 rounded text-[11px]">${escapeHtml(r.battle_type)}</span></td>
@@ -726,18 +852,18 @@
             } else {
                 // Standard Clay Tablet Grid
                 let gridHtml = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
-                rows.forEach(r => {
+                rows.forEach((r, idx) => {
                     const outcomeBadge = r.outcome.includes('victory') ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/60' :
                                          r.outcome.includes('loss') ? 'bg-red-950/80 text-red-300 border-red-600/60' :
                                          'bg-amber-950/80 text-amber-300 border-amber-600/60';
 
                     gridHtml += `
-                        <div class="clay-card p-5 flex flex-col justify-between hover:scale-[1.01] transition-transform">
+                        <div onclick="openBattleModal(${idx})" class="clay-card p-5 flex flex-col justify-between hover:scale-[1.03] hover:border-amber-400/90 cursor-pointer transition-all duration-200 shadow-xl group">
                             <div>
                                 <!-- General & Nation Header -->
                                 <div class="flex justify-between items-start mb-3">
                                     <div>
-                                        <h4 class="font-bold text-lg text-amber-100 font-sumerian-header leading-snug">
+                                        <h4 class="font-bold text-lg text-amber-100 font-sumerian-header leading-snug group-hover:text-amber-300 transition-colors">
                                             ${escapeHtml(r.general_name)}
                                         </h4>
                                         <div class="text-xs text-amber-300/80 font-mono">
@@ -771,8 +897,8 @@
                                 <span class="px-2.5 py-1 rounded border ${outcomeBadge} font-bold">
                                     ${escapeHtml(r.outcome)}
                                 </span>
-                                <span class="text-amber-400/60 italic" title="Recorded by ${escapeHtml(r.username)}">
-                                    <i class="fa-solid fa-pen-nib mr-1"></i>${escapeHtml(r.username)}
+                                <span class="text-amber-400/70 text-[11px] font-semibold flex items-center group-hover:text-amber-200">
+                                    <span>Expand</span> <i class="fa-solid fa-arrow-up-right-from-square ml-1 text.xs"></i>
                                 </span>
                             </div>
                         </div>
@@ -785,7 +911,6 @@
 
         // Era/Decade Grouping Logic
         function renderGroupedByEra(rows, targetEl) {
-            // Helper to parse rough decade or era key
             const getEraKey = (dateStr) => {
                 if (dateStr.includes('BC')) {
                     return "Ancient Era (BC)";
@@ -896,7 +1021,6 @@
             const dates = document.getElementById('inputDates').value.trim();
             const duration = document.getElementById('inputDuration').value.trim();
 
-            // Awkward Case Handling: Empty submission validation
             if (!username && !general_name && !nationality && !location && !battle_type && !outcome && !dates && !duration) {
                 showAlertModal("The dispatch form is completely empty! Please fill out the required battle details before sealing the ledger.");
                 return;
@@ -919,12 +1043,16 @@
                 dates
             };
 
-            // Insert into Supabase
+            // Insert into Supabase if connected
             try {
-                const { data, error } = await supabase.from('battles').insert([newRecord]).select();
-                if (error) throw error;
-                if (data && data.length > 0) {
-                    appData.unshift(data[0]);
+                if (supabaseClient) {
+                    const { data, error } = await supabaseClient.from('battles').insert([newRecord]).select();
+                    if (error) throw error;
+                    if (data && data.length > 0) {
+                        appData.unshift(data[0]);
+                    } else {
+                        appData.unshift(newRecord);
+                    }
                 } else {
                     appData.unshift(newRecord);
                 }
@@ -940,7 +1068,7 @@
             // Clear form
             clearForm();
 
-            // Switch to viewing tab to show newly added row
+            // Switch to viewing tab
             switchTab('view');
         }
 
@@ -948,7 +1076,7 @@
             document.getElementById('battleForm').reset();
         }
 
-        // Modal alert functions (No alert() used)
+        // Modal alert functions
         function showAlertModal(msg) {
             document.getElementById('alertModalMessage').innerText = msg;
             document.getElementById('alertModal').classList.remove('hidden');
@@ -958,10 +1086,112 @@
             document.getElementById('alertModal').classList.add('hidden');
         }
 
+        // Focused Battle Popup Modal Logic
+        function openBattleModal(index) {
+            const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+            const nationVal = document.getElementById('nationFilter').value;
+            const typeVal = document.getElementById('typeFilter').value;
+
+            const currentFiltered = appData.filter(item => {
+                const matchesSearch = item.general_name.toLowerCase().includes(searchVal) || 
+                                      item.location.toLowerCase().includes(searchVal) ||
+                                      item.nationality.toLowerCase().includes(searchVal);
+                const matchesNation = nationVal === 'ALL' || item.nationality === nationVal;
+                const matchesType = typeVal === 'ALL' || item.battle_type === typeVal;
+                return matchesSearch && matchesNation && matchesType;
+            });
+
+            const battle = currentFiltered[index] || appData[index];
+            if (!battle) return;
+
+            const outcomeBadge = battle.outcome.includes('victory') ? 'bg-emerald-950 text-emerald-300 border-emerald-500' :
+                                 battle.outcome.includes('loss') ? 'bg-red-950 text-red-300 border-red-500' :
+                                 'bg-amber-950 text-amber-300 border-amber-500';
+
+            const modalContent = document.getElementById('battleModalContent');
+            modalContent.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Header -->
+                    <div class="border-b border-amber-700/60 pb-4 pr-8">
+                        <span class="clay-badge px-3 py-1 rounded-full text-xs font-bold tracking-widest text-amber-300 uppercase inline-block mb-2">
+                            <i class="fa-solid fa-shield-halved mr-1"></i> ${escapeHtml(battle.battle_type)} Engagement
+                        </span>
+                        <h3 class="text-3xl font-extrabold font-sumerian-header text-amber-100">
+                            ${escapeHtml(battle.general_name)}
+                        </h3>
+                        <p class="text-sm text-amber-300/90 font-mono mt-1">
+                            <i class="fa-solid fa-flag mr-1 text-amber-400"></i> ${escapeHtml(battle.nationality)}
+                        </p>
+                    </div>
+
+                    <!-- Detailed Info Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-black/30 p-4 rounded-xl border border-amber-800/60">
+                        <div>
+                            <span class="text-xs uppercase text-amber-400/80 font-bold block">Battle Location</span>
+                            <span class="text-lg font-semibold text-amber-100">${escapeHtml(battle.location)}</span>
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase text-amber-400/80 font-bold block">Engagement Outcome</span>
+                            <span class="inline-block mt-1 px-3 py-1 rounded border ${outcomeBadge} font-bold text-sm">
+                                ${escapeHtml(battle.outcome)}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase text-amber-400/80 font-bold block">Date / Era</span>
+                            <span class="text-base font-mono text-amber-200">${escapeHtml(battle.dates)}</span>
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase text-amber-400/80 font-bold block">Duration</span>
+                            <span class="text-base text-amber-200">${escapeHtml(battle.duration)}</span>
+                        </div>
+                    </div>
+
+                    <!-- Tactical Note / Description -->
+                    <div class="bg-amber-950/50 p-4 rounded-xl border border-amber-800/80 text-amber-200/90 text-sm leading-relaxed">
+                        <div class="font-bold font-sumerian-header text-amber-300 mb-1 flex items-center space-x-2">
+                            <i class="fa-solid fa-scroll text-amber-400"></i>
+                            <span>Historical Tactical Summary</span>
+                        </div>
+                        <p>
+                            This recorded dispatch details the historical tactical engagement led by <strong>${escapeHtml(battle.general_name)}</strong> at <strong>${escapeHtml(battle.location)}</strong>. Resulting in a <strong>${escapeHtml(battle.outcome)}</strong>, this maneuver forms an essential milestone within the high-command records.
+                        </p>
+                    </div>
+
+                    <!-- Footer Info -->
+                    <div class="flex items-center justify-between text-xs text-amber-400/70 border-t border-amber-800/60 pt-4">
+                        <span><i class="fa-solid fa-user-pen mr-1"></i> Transcribed by @${escapeHtml(battle.username)}</span>
+                        <span><i class="fa-solid fa-database mr-1"></i> Generals Emporium Ledger</span>
+                    </div>
+                </div>
+            `;
+
+            const modal = document.getElementById('battleModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('battleModalContainer').classList.remove('scale-95');
+                document.getElementById('battleModalContainer').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeBattleModal() {
+            const container = document.getElementById('battleModalContainer');
+            container.classList.remove('scale-100');
+            container.classList.add('scale-95');
+            setTimeout(() => {
+                document.getElementById('battleModal').classList.add('hidden');
+            }, 150);
+        }
+
+        function closeBattleModalOnBackdrop(e) {
+            if (e.target.id === 'battleModal') {
+                closeBattleModal();
+            }
+        }
+
         // Helper to escape HTML string attributes safely
         function escapeHtml(str) {
             if (!str) return '';
-            return str
+            return String(str)
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
