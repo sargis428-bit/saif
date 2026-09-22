@@ -505,8 +505,8 @@
     </div>
 
     <script>
-        // Supabase configuration - replace with your project details or use the DB modal
-        let SUPABASE_URL = localStorage.getItem('emporium_sb_url') || 'https://fnO6q510nPODeejDxMllw.supabase.co';
+        // Supabase configuration - configured for generals_emporium_items table schema
+        let SUPABASE_URL = localStorage.getItem('emporium_sb_url') || 'https://5fnO6q510nPODeejDxMllw.supabase.co';
         let SUPABASE_ANON_KEY = localStorage.getItem('emporium_sb_key') || 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
         
         let supabaseClient = null;
@@ -653,7 +653,7 @@
 
         function initSupabase() {
             try {
-                if (window.supabase && typeof window.supabase.createClient === 'function' && SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('fnO6q510nPODeejDxMllw')) {
+                if (window.supabase && typeof window.supabase.createClient === 'function' && SUPABASE_URL.startsWith('http')) {
                     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 } else {
                     supabaseClient = null;
@@ -672,22 +672,47 @@
             }
 
             try {
-                // Non-blocking query with timeout check
+                // Non-blocking query targeting generals_emporium_items
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
 
                 const { data, error } = await supabaseClient
-                    .from('battles')
+                    .from('generals_emporium_items')
                     .select('*')
                     .order('id', { ascending: false });
 
                 clearTimeout(timeoutId);
 
                 if (!error && data && data.length > 0) {
-                    const remoteIds = new Set(data.map(d => String(d.id)));
-                    const localOnly = appData.filter(b => !remoteIds.has(String(b.id)));
-                    appData = [...data, ...localOnly];
-                    updateDbStatus(true, "Remote Synced");
+                    const remoteBattles = data.map(item => {
+                        let parsed = {};
+                        try {
+                            if (item.description && item.description.trim().startsWith('{')) {
+                                parsed = JSON.parse(item.description);
+                            }
+                        } catch (e) {
+                            parsed = {};
+                        }
+
+                        return {
+                            id: 'sb-' + item.id,
+                            db_id: item.id,
+                            username: parsed.username || 'Imperial_Scribe',
+                            general_name: parsed.general_name || item.item_name || 'Unknown Commander',
+                            nationality: parsed.nationality || 'Grand Empire',
+                            location: parsed.location || item.item_name || 'Unknown Location',
+                            battle_type: parsed.battle_type || item.item_category || 'Land Battle',
+                            outcome: parsed.outcome || 'Major victory',
+                            dates: parsed.dates || (item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Historical Era'),
+                            duration: parsed.duration || '1 Day',
+                            price: item.price || 0.00
+                        };
+                    });
+
+                    const remoteIds = new Set(remoteBattles.map(d => String(d.id)));
+                    const localOnly = userCreatedBattles.filter(b => !remoteIds.has(String(b.id)));
+                    appData = [...remoteBattles, ...localOnly, ...initialBattles];
+                    updateDbStatus(true, "Supabase Synced");
                     populateDatalist();
                     populateNationFilter();
                     renderViewScreen();
@@ -713,14 +738,11 @@
             }
         }
 
-        // Initialize App on DOM load - RENDER IMMEDIATELY so military generals show up right away!
+        // Initialize App on DOM load
         window.addEventListener('DOMContentLoaded', () => {
-            // Instant render of all generals and battles
             populateDatalist();
             populateNationFilter();
             renderViewScreen();
-
-            // Background optional remote sync
             fetchBattles();
         });
 
@@ -1125,7 +1147,7 @@
                 return;
             }
 
-            // Create new record with unique ID
+            // Local state object
             const newRecord = {
                 id: 'battle-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
                 username,
@@ -1143,22 +1165,35 @@
             saveStoredUserBattles(userCreatedBattles);
             appData.unshift(newRecord);
 
-            // Attempt remote insertion if connected
+            // Attempt remote insertion into generals_emporium_items table matching schema
             if (supabaseClient) {
                 try {
-                    const { data, error } = await supabaseClient.from('battles').insert([{
-                        username,
-                        general_name,
-                        nationality,
-                        battle_type,
-                        outcome,
-                        location,
-                        duration,
-                        dates
-                    }]).select();
+                    const payload = {
+                        project_id: 2,
+                        item_name: `${general_name} - ${location}`,
+                        item_category: battle_type,
+                        price: 0.00,
+                        description: JSON.stringify({
+                            username,
+                            general_name,
+                            nationality,
+                            location,
+                            battle_type,
+                            outcome,
+                            dates,
+                            duration
+                        })
+                    };
+
+                    const { data, error } = await supabaseClient
+                        .from('generals_emporium_items')
+                        .insert([payload])
+                        .select();
 
                     if (!error && data && data[0]) {
-                        newRecord.id = data[0].id || newRecord.id;
+                        newRecord.id = 'sb-' + data[0].id;
+                        newRecord.db_id = data[0].id;
+                        updateDbStatus(true, "Supabase Synced");
                     }
                 } catch (err) {
                     console.warn("Remote sync fallback: Saved locally", err.message);
@@ -1175,7 +1210,7 @@
             // Show success notification & switch back to view
             showAlertModal(
                 "Dispatch Sealed & Recorded",
-                `The tactical record for <strong>${escapeHtml(general_name)}</strong> at <strong>${escapeHtml(location)}</strong> has been successfully transcribed into the archives.`,
+                `The tactical record for <strong>${escapeHtml(general_name)}</strong> at <strong>${escapeHtml(location)}</strong> has been successfully transcribed into the archives and synchronized to Supabase.`,
                 "success"
             );
 
@@ -1324,7 +1359,7 @@
         function resetDbConfig() {
             localStorage.removeItem('emporium_sb_url');
             localStorage.removeItem('emporium_sb_key');
-            SUPABASE_URL = 'https://fnO6q510nPODeejDxMllw.supabase.co';
+            SUPABASE_URL = 'https://5fnO6q510nPODeejDxMllw.supabase.co';
             SUPABASE_ANON_KEY = 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
             closeDbConfigModal();
             fetchBattles();
