@@ -106,10 +106,6 @@
             position: relative;
         }
 
-        .napoleon-gold-border {
-            border: 1px solid #d4af37;
-        }
-
         .wax-seal {
             width: 54px;
             height: 54px;
@@ -158,15 +154,15 @@
 <body id="appBody" class="theme-clay min-h-screen transition-colors duration-500 pb-16">
 
     <!-- TOP NAVIGATION BAR / SCREEN TOGGLE -->
-    <header class="sticky top-0 z-40 backdrop-blur-md bg-opacity-90 border-b shadow-lg transition-colors duration-500" id="mainHeader">
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-opacity-95 bg-[#1f130b] border-b border-amber-900/60 shadow-xl transition-colors duration-500" id="mainHeader">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <!-- App Logo / Title -->
             <div class="flex items-center space-x-3">
-                <div id="headerIcon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md border">
-                    <i class="fa-solid font-bold text-amber-400 fa-monument"></i>
+                <div id="headerIcon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md border bg-amber-900/80 border-amber-600 text-amber-300">
+                    <i class="fa-solid fa-monument"></i>
                 </div>
                 <div>
-                    <h1 id="headerTitle" class="text-xl sm:text-2xl font-bold font-sumerian-header tracking-wider">
+                    <h1 id="headerTitle" class="text-xl sm:text-2xl font-bold font-sumerian-header tracking-wider text-amber-200">
                         GENERALS EMPORIUM
                     </h1>
                     <p id="headerSubtitle" class="text-xs opacity-80 font-mono tracking-widest uppercase">
@@ -175,18 +171,26 @@
                 </div>
             </div>
 
-            <!-- View Switcher Tabs -->
-            <div class="flex items-center space-x-2 bg-black/40 p-1.5 rounded-xl border border-white/10" id="tabContainer">
-                <button id="navViewBtn" onclick="switchTab('view')" class="px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 shadow-inner">
-                    <i class="fa-solid fa-eye"></i>
-                    <span class="hidden md:inline">Viewing tab</span>
-                    <span class="text-xs opacity-75 hidden lg:inline">(Clay Tablet)</span>
+            <!-- View Switcher Tabs & Connection Status -->
+            <div class="flex items-center space-x-3">
+                <button onclick="openDbConfigModal()" id="dbStatusBtn" title="Database Connection Settings" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border bg-black/40 border-amber-700/60 text-amber-300 hover:bg-amber-900/40 transition">
+                    <span id="dbStatusDot" class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
+                    <span id="dbStatusText">Local + Sync</span>
+                    <i class="fa-solid fa-gear text-[10px] ml-1"></i>
                 </button>
-                <button id="navEditBtn" onclick="switchTab('edit')" class="px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2">
-                    <i class="fa-solid fa-feather-pointed"></i>
-                    <span class="hidden md:inline">Editing Screen</span>
-                    <span class="text-xs opacity-75 hidden lg:inline">(Napoleonic Dispatch)</span>
-                </button>
+
+                <div class="flex items-center space-x-2 bg-black/40 p-1.5 rounded-xl border border-white/10" id="tabContainer">
+                    <button id="navViewBtn" onclick="switchTab('view')" class="px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 bg-amber-700 text-amber-100 shadow-inner border border-amber-500">
+                        <i class="fa-solid fa-eye"></i>
+                        <span class="hidden md:inline">Viewing Tab</span>
+                        <span class="text-xs opacity-75 hidden lg:inline">(Clay Tablet)</span>
+                    </button>
+                    <button id="navEditBtn" onclick="switchTab('edit')" class="px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 text-amber-300 hover:bg-amber-950/50">
+                        <i class="fa-solid fa-feather-pointed"></i>
+                        <span class="hidden md:inline">Editing Screen</span>
+                        <span class="text-xs opacity-75 hidden lg:inline">(Napoleonic Dispatch)</span>
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -244,7 +248,7 @@
                         </select>
                     </div>
 
-                    <!-- Compact Mode Toggle for High Row Counts -->
+                    <!-- Compact Mode Toggle -->
                     <div class="md:col-span-2 flex items-center justify-end">
                         <button id="compactToggleBtn" onclick="toggleCompactMode()" class="w-full h-full px-3 py-2 bg-amber-950/80 hover:bg-amber-900 border border-amber-600/50 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition">
                             <i class="fa-solid fa-list-ul"></i>
@@ -272,7 +276,7 @@
 
                 <!-- Grouping / View Tabs -->
                 <div class="flex items-center space-x-2 text-xs">
-                    <button onclick="setGrouping('all')" id="groupAllBtn" class="px-3 py-1.5 rounded-md bg-amber-700 text-amber-100 font-bold border border-amber-500">
+                    <button onclick="setGrouping('all')" id="groupAllBtn" class="px-3 py-1.5 rounded-md bg-amber-700 text-amber-100 font-bold border border-amber-500 shadow">
                         All Entries
                     </button>
                     <button onclick="setGrouping('era')" id="groupEraBtn" class="px-3 py-1.5 rounded-md bg-amber-950/60 text-amber-300 hover:bg-amber-900 border border-amber-800">
@@ -290,7 +294,6 @@
             </div>
 
         </section>
-
 
         <!-- ========================================================================= -->
         <!-- EDITING SCREEN (FRENCH NAPOLEONIC DISPATCH AESTHETIC)                      -->
@@ -327,20 +330,20 @@
                     <!-- Row 1: Username & General Name -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2" for="inputUsername">
                                 <i class="fa-solid fa-user-pen mr-1 text-amber-700"></i> Contributor Username <span class="text-red-600">*</span>
                             </label>
-                            <input type="text" id="inputUsername" maxlength="500" placeholder="e.g. APoorva_HistoryBuff"
+                            <input type="text" id="inputUsername" maxlength="500" placeholder="e.g. HistoryBuff_99"
                                 class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
                             <p class="text-xs text-slate-500 mt-1">Accepts up to 500 characters</p>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2" for="inputGeneralName">
                                 <i class="fa-solid fa-user-shield mr-1 text-amber-700"></i> General Name <span class="text-red-600">*</span>
                             </label>
                             <div class="relative">
-                                <input type="text" id="inputGeneralName" list="existingGeneralsList" maxlength="500" placeholder="e.g. Napoleon Bonaparte, Saint Sarkis"
+                                <input type="text" id="inputGeneralName" list="existingGeneralsList" maxlength="500" placeholder="e.g. Napoleon Bonaparte, Alexander the Great"
                                     class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
                                 <datalist id="existingGeneralsList">
                                     <!-- Populated via JS -->
@@ -353,7 +356,7 @@
                     <!-- Row 2: Nationality & Battle Location -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2" for="inputNationality">
                                 <i class="fa-solid fa-flag mr-1 text-amber-700"></i> Nationality / Empire <span class="text-red-600">*</span>
                             </label>
                             <input type="text" id="inputNationality" maxlength="500" placeholder="e.g. France, Macedon, Carthage, Rome"
@@ -361,19 +364,19 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2" for="inputLocation">
                                 <i class="fa-solid fa-location-dot mr-1 text-amber-700"></i> Battle Location <span class="text-red-600">*</span>
                             </label>
-                            <input type="text" id="inputLocation" maxlength="500" placeholder="e.g. Austerlitz (Moravia), Cannae, Yarmouk"
+                            <input type="text" id="inputLocation" maxlength="500" placeholder="e.g. Austerlitz (Moravia), Cannae, Gaugamela"
                                 class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
                         </div>
                     </div>
 
-                    <!-- Row 3: Battle Type & Outcome (Pick from lists) -->
+                    <!-- Row 3: Battle Type & Outcome -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
-                                <i class="fa-solid fa-burst mr-1 text-amber-700"></i> Engagement Type (Pick List) <span class="text-red-600">*</span>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2" for="inputBattleType">
+                                <i class="fa-solid fa-burst mr-1 text-amber-700"></i> Engagement Type <span class="text-red-600">*</span>
                             </label>
                             <select id="inputBattleType" class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
                                 <option value="">-- Select Engagement Type --</option>
@@ -388,8 +391,8 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
-                                <i class="fa-solid fa-trophy mr-1 text-amber-700"></i> Battle Outcome (Pick List) <span class="text-red-600">*</span>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2" for="inputOutcome">
+                                <i class="fa-solid fa-trophy mr-1 text-amber-700"></i> Battle Outcome <span class="text-red-600">*</span>
                             </label>
                             <select id="inputOutcome" class="w-full px-4 py-2.5 rounded napoleon-input text-sm" required>
                                 <option value="">-- Select Outcome --</option>
@@ -405,7 +408,7 @@
                     <!-- Row 4: Dates & Duration -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2" for="inputDates">
                                 <i class="fa-solid fa-calendar-days mr-1 text-amber-700"></i> Dates / Era <span class="text-red-600">*</span>
                             </label>
                             <input type="text" id="inputDates" maxlength="500" placeholder="e.g. Dec 2, 1805 AD or 331 BC"
@@ -413,7 +416,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-2" for="inputDuration">
                                 <i class="fa-solid fa-stopwatch mr-1 text-amber-700"></i> Battle Duration <span class="text-red-600">*</span>
                             </label>
                             <input type="text" id="inputDuration" maxlength="500" placeholder="e.g. 9 hours, 3 days, 7 months"
@@ -426,9 +429,9 @@
                         <button type="button" onclick="clearForm()" class="w-full sm:w-auto px-6 py-2.5 rounded border border-slate-400 text-slate-700 hover:bg-slate-200 transition text-sm font-semibold">
                             <i class="fa-solid fa-eraser mr-1"></i> Clear Form
                         </button>
-                        <button type="submit" class="w-full sm:w-auto px-8 py-3 rounded bg-amber-800 hover:bg-amber-900 text-amber-100 font-bold shadow-lg border border-amber-500 transition flex items-center justify-center space-x-2 text-base">
+                        <button type="submit" id="submitDispatchBtn" class="w-full sm:w-auto px-8 py-3 rounded bg-amber-800 hover:bg-amber-900 text-amber-100 font-bold shadow-lg border border-amber-500 transition flex items-center justify-center space-x-2 text-base cursor-pointer">
                             <i class="fa-solid fa-file-signature"></i>
-                            <span>Seal & Dispatch Record</span>
+                            <span id="submitBtnLabel">Seal & Dispatch Record</span>
                         </button>
                     </div>
 
@@ -450,42 +453,68 @@
         </div>
     </div>
 
-    <!-- INLINE NOTIFICATION / REJECTION MODAL -->
+    <!-- INLINE NOTIFICATION / ALERT MODAL -->
     <div id="alertModal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden p-4">
-        <div class="max-w-md w-full bg-stone-900 border-2 border-red-600 rounded-xl p-6 text-amber-100 shadow-2xl relative">
-            <div class="flex items-center space-x-3 text-red-500 mb-4">
-                <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
-                <h3 class="text-xl font-bold font-sumerian-header">Submission Rejected</h3>
+        <div id="alertModalCard" class="max-w-md w-full bg-stone-900 border-2 border-amber-500 rounded-xl p-6 text-amber-100 shadow-2xl relative">
+            <div id="alertHeader" class="flex items-center space-x-3 text-amber-400 mb-4">
+                <i id="alertIcon" class="fa-solid fa-circle-info text-3xl"></i>
+                <h3 id="alertModalTitle" class="text-xl font-bold font-sumerian-header">Notice</h3>
             </div>
             <p id="alertModalMessage" class="text-sm text-stone-300 mb-6 leading-relaxed">
-                The high-command ledger rejects empty dispatches. Please fill out all battle details before sealing.
+                Notification message text goes here.
             </p>
             <div class="text-right">
-                <button onclick="closeAlertModal()" class="px-5 py-2 rounded bg-red-800 hover:bg-red-700 text-white text-sm font-bold shadow">
+                <button onclick="closeAlertModal()" class="px-5 py-2 rounded bg-amber-800 hover:bg-amber-700 text-white text-sm font-bold shadow">
                     Acknowledge
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- DATABASE CONFIG MODAL -->
+    <div id="dbConfigModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="max-w-lg w-full bg-stone-900 border-2 border-amber-600 rounded-xl p-6 text-amber-100 shadow-2xl relative">
+            <button onclick="closeDbConfigModal()" class="absolute top-3 right-3 text-amber-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="flex items-center space-x-3 text-amber-400 mb-3">
+                <i class="fa-solid fa-database text-2xl"></i>
+                <h3 class="text-xl font-bold font-sumerian-header">Database & Sync Settings</h3>
+            </div>
+            <p class="text-xs text-stone-300 mb-4 leading-relaxed">
+                Generals Emporium maintains an immediate local repository for all added battles. If you wish to connect your own Supabase project for multi-device sync, enter your credentials below.
+            </p>
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-amber-300 font-mono mb-1">Supabase Project URL</label>
+                    <input type="text" id="configDbUrl" placeholder="https://your-project.supabase.co" class="w-full px-3 py-2 rounded bg-stone-800 border border-stone-600 text-amber-100 font-mono text-xs">
+                </div>
+                <div>
+                    <label class="block text-amber-300 font-mono mb-1">Supabase Anon Publishable Key</label>
+                    <input type="text" id="configDbKey" placeholder="eyJhbGciOi..." class="w-full px-3 py-2 rounded bg-stone-800 border border-stone-600 text-amber-100 font-mono text-xs">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-between items-center">
+                <button onclick="resetDbConfig()" class="text-xs text-amber-400 hover:underline">Reset Defaults</button>
+                <div class="space-x-2">
+                    <button onclick="closeDbConfigModal()" class="px-4 py-2 rounded border border-stone-600 text-stone-300 text-xs">Cancel</button>
+                    <button onclick="saveDbConfig()" class="px-4 py-2 rounded bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs">Save & Connect</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // Initialize Supabase Client with User Key
-        const SUPABASE_URL = 'https://fnO6q510nPODeejDxMllw.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
+        // Supabase configuration - replace with your project details or use the DB modal
+        let SUPABASE_URL = localStorage.getItem('emporium_sb_url') || 'https://fnO6q510nPODeejDxMllw.supabase.co';
+        let SUPABASE_ANON_KEY = localStorage.getItem('emporium_sb_key') || 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
         
         let supabaseClient = null;
-        try {
-            if (window.supabase && typeof window.supabase.createClient === 'function') {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-        } catch (err) {
-            console.warn("Supabase connection check:", err.message);
-        }
 
-        // 10 Major Historical Battles specifically from Vercingetorix, Erwin Rommel, Napoleon, Julius Caesar, and Hannibal
+        // Default catalog of 10 Major Historical Battles with explicit unique IDs
         const initialBattles = [
             {
+                id: "battle-1",
                 username: "Gallic_Arverni",
                 general_name: "Vercingetorix",
                 nationality: "Gaul (Arverni)",
@@ -496,6 +525,7 @@
                 duration: "Several weeks"
             },
             {
+                id: "battle-2",
                 username: "Gallic_Arverni",
                 general_name: "Vercingetorix",
                 nationality: "Gaul (Arverni)",
@@ -506,6 +536,7 @@
                 duration: "2 months"
             },
             {
+                id: "battle-3",
                 username: "Afrikakorps_Scribe",
                 general_name: "Erwin Rommel",
                 nationality: "Germany",
@@ -516,6 +547,7 @@
                 duration: "26 days"
             },
             {
+                id: "battle-4",
                 username: "Afrikakorps_Scribe",
                 general_name: "Erwin Rommel",
                 nationality: "Germany",
@@ -526,6 +558,7 @@
                 duration: "5 days"
             },
             {
+                id: "battle-5",
                 username: "Imperial_Archivist",
                 general_name: "Napoleon Bonaparte",
                 nationality: "France",
@@ -536,6 +569,7 @@
                 duration: "9 hours"
             },
             {
+                id: "battle-6",
                 username: "Imperial_Archivist",
                 general_name: "Napoleon Bonaparte",
                 nationality: "France",
@@ -546,6 +580,7 @@
                 duration: "10 hours"
             },
             {
+                id: "battle-7",
                 username: "Roman_Legates",
                 general_name: "Julius Caesar",
                 nationality: "Rome",
@@ -556,6 +591,7 @@
                 duration: "1 day"
             },
             {
+                id: "battle-8",
                 username: "Roman_Legates",
                 general_name: "Julius Caesar",
                 nationality: "Rome",
@@ -566,6 +602,7 @@
                 duration: "5 hours"
             },
             {
+                id: "battle-9",
                 username: "Carthage_Strategist",
                 general_name: "Hannibal Barca",
                 nationality: "Carthage",
@@ -576,6 +613,7 @@
                 duration: "12 hours"
             },
             {
+                id: "battle-10",
                 username: "Carthage_Strategist",
                 general_name: "Hannibal Barca",
                 nationality: "Carthage",
@@ -587,66 +625,105 @@
             }
         ];
 
-        // State variables
-        let appData = [...initialBattles];
+        // Local storage persistence handlers
+        function getStoredUserBattles() {
+            try {
+                const data = localStorage.getItem('emporium_local_battles');
+                return data ? JSON.parse(data) : [];
+            } catch (err) {
+                console.warn("Could not read local user battles", err);
+                return [];
+            }
+        }
+
+        function saveStoredUserBattles(userBattles) {
+            try {
+                localStorage.setItem('emporium_local_battles', JSON.stringify(userBattles));
+            } catch (err) {
+                console.warn("Could not save user battle locally", err);
+            }
+        }
+
+        // Global State initialized immediately with user items + catalog
+        let userCreatedBattles = getStoredUserBattles();
+        let appData = [...userCreatedBattles, ...initialBattles];
         let currentTab = 'view';
         let currentGrouping = 'all'; // 'all', 'era', 'nation'
         let isCompactView = false;
 
-        // Fetch Data from Supabase Table: generals_emporium_items
-        async function fetchBattles() {
+        function initSupabase() {
             try {
-                if (supabaseClient) {
-                    const { data, error } = await supabaseClient.from('generals_emporium_items').select('*');
-                    if (error) throw error;
-                    if (data && data.length > 0) {
-                        const parsedData = data.map(item => {
-                            try {
-                                const parsed = JSON.parse(item.description);
-                                if (parsed && typeof parsed === 'object') {
-                                    return {
-                                        username: parsed.username || 'Anonymous',
-                                        general_name: parsed.general_name || item.item_name || 'Unknown',
-                                        nationality: parsed.nationality || 'Unknown',
-                                        location: parsed.location || 'Unknown',
-                                        battle_type: parsed.battle_type || item.item_category || 'Land Battle',
-                                        outcome: parsed.outcome || 'Major victory',
-                                        dates: parsed.dates || 'Historical',
-                                        duration: parsed.duration || 'N/A'
-                                    };
-                                }
-                            } catch (e) {
-                                // Fallback if description text is not JSON stringified
-                            }
-                            return {
-                                username: 'Anonymous',
-                                general_name: item.item_name || 'Unknown',
-                                nationality: 'Unknown',
-                                location: 'Unknown',
-                                battle_type: item.item_category || 'Land Battle',
-                                outcome: 'Major victory',
-                                dates: 'Historical',
-                                duration: 'N/A'
-                            };
-                        });
-                        appData = [...parsedData, ...initialBattles];
-                    }
+                if (window.supabase && typeof window.supabase.createClient === 'function' && SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('fnO6q510nPODeejDxMllw')) {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                } else {
+                    supabaseClient = null;
                 }
             } catch (err) {
-                console.warn("Could not fetch remote battles from Supabase, operating with catalog:", err.message);
-            } finally {
-                populateDatalist();
-                populateNationFilter();
-                renderViewScreen();
+                console.warn("Supabase initialization status:", err.message);
+                supabaseClient = null;
             }
         }
 
-        // Initialize App on DOM ready
+        async function fetchBattles() {
+            initSupabase();
+            if (!supabaseClient) {
+                updateDbStatus(false, "Local Repository");
+                return;
+            }
+
+            try {
+                // Non-blocking query with timeout check
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+                const { data, error } = await supabaseClient
+                    .from('battles')
+                    .select('*')
+                    .order('id', { ascending: false });
+
+                clearTimeout(timeoutId);
+
+                if (!error && data && data.length > 0) {
+                    const remoteIds = new Set(data.map(d => String(d.id)));
+                    const localOnly = appData.filter(b => !remoteIds.has(String(b.id)));
+                    appData = [...data, ...localOnly];
+                    updateDbStatus(true, "Remote Synced");
+                    populateDatalist();
+                    populateNationFilter();
+                    renderViewScreen();
+                } else {
+                    updateDbStatus(false, "Local Repository");
+                }
+            } catch (err) {
+                console.warn("Operating with local catalog repository:", err.message);
+                updateDbStatus(false, "Local Repository");
+            }
+        }
+
+        function updateDbStatus(isConnected, text) {
+            const dot = document.getElementById('dbStatusDot');
+            const statusText = document.getElementById('dbStatusText');
+            if (dot && statusText) {
+                statusText.innerText = text;
+                if (isConnected) {
+                    dot.className = "w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse";
+                } else {
+                    dot.className = "w-2 h-2 rounded-full bg-amber-400 inline-block";
+                }
+            }
+        }
+
+        // Initialize App on DOM load - RENDER IMMEDIATELY so military generals show up right away!
         window.addEventListener('DOMContentLoaded', () => {
+            // Instant render of all generals and battles
+            populateDatalist();
+            populateNationFilter();
+            renderViewScreen();
+
+            // Background optional remote sync
             fetchBattles();
         });
 
-        // Switch between Clay Tablet Viewing Screen & Napoleonic Editing Screen
         function switchTab(tabName) {
             currentTab = tabName;
             const body = document.getElementById('appBody');
@@ -702,7 +779,6 @@
         function setGrouping(groupType) {
             currentGrouping = groupType;
             
-            // Highlight active tab
             ['All', 'Era', 'Nation'].forEach(type => {
                 const btn = document.getElementById(`group${type}Btn`);
                 if (type.toLowerCase() === groupType) {
@@ -718,36 +794,41 @@
         function toggleCompactMode() {
             isCompactView = !isCompactView;
             const btnText = document.getElementById('compactBtnText');
-            btnText.innerText = isCompactView ? "Card View" : "Compact View";
+            if (btnText) {
+                btnText.innerText = isCompactView ? "Card View" : "Compact View";
+            }
             renderViewScreen();
         }
 
-        // Main Rendering Logic for View Screen
         function renderViewScreen() {
-            const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
-            const nationVal = document.getElementById('nationFilter').value;
-            const typeVal = document.getElementById('typeFilter').value;
+            const searchVal = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+            const nationVal = document.getElementById('nationFilter')?.value || 'ALL';
+            const typeVal = document.getElementById('typeFilter')?.value || 'ALL';
 
             // Filter rows
             let filtered = appData.filter(item => {
-                const matchesSearch = item.general_name.toLowerCase().includes(searchVal) || 
-                                      item.location.toLowerCase().includes(searchVal) ||
-                                      item.nationality.toLowerCase().includes(searchVal);
+                const matchesSearch = !searchVal || 
+                                      (item.general_name && item.general_name.toLowerCase().includes(searchVal)) || 
+                                      (item.location && item.location.toLowerCase().includes(searchVal)) ||
+                                      (item.nationality && item.nationality.toLowerCase().includes(searchVal));
                 const matchesNation = nationVal === 'ALL' || item.nationality === nationVal;
                 const matchesType = typeVal === 'ALL' || item.battle_type === typeVal;
                 return matchesSearch && matchesNation && matchesType;
             });
 
             // Update Badge Count
-            document.getElementById('recordCountBadge').innerText = `${filtered.length} Battle${filtered.length === 1 ? '' : 's'}`;
+            const countBadge = document.getElementById('recordCountBadge');
+            if (countBadge) {
+                countBadge.innerText = `${filtered.length} Battle${filtered.length === 1 ? '' : 's'}`;
+            }
 
-            // 1. Synthesize General Profile if search corresponds to a specific general
+            // Synthesize General Profile
             renderGeneralSynthesis(filtered, searchVal);
 
-            // 2. Render Battles List or Groupings
+            // Render Battles Area
             const displayArea = document.getElementById('battlesDisplayArea');
+            if (!displayArea) return;
 
-            // Handle Empty State
             if (filtered.length === 0) {
                 displayArea.innerHTML = `
                     <div class="clay-card p-10 text-center my-8">
@@ -755,41 +836,38 @@
                             <i class="fa-solid fa-scroll font-cuneiform-subtle"></i>
                         </div>
                         <h4 class="text-2xl font-bold font-sumerian-header text-amber-200 mb-2">
-                            Imagine this says Alexander the Great's Opis speech.
+                            No Matches Discovered
                         </h4>
                         <p class="text-sm text-amber-300/80 max-w-md mx-auto">
-                            No matching military dispatches found in the current clay archives. Try broadening your search or switching filters.
+                            No military dispatches found in the clay archives matching your current filters. Try broadening your search or sealing a new dispatch!
                         </p>
                     </div>
                 `;
                 return;
             }
 
-            // Render based on Grouping Mode
             if (currentGrouping === 'era') {
                 renderGroupedByEra(filtered, displayArea);
             } else if (currentGrouping === 'nation') {
                 renderGroupedByNation(filtered, displayArea);
             } else {
-                // All entries standard grid
                 renderBattleGrid(filtered, displayArea);
             }
         }
 
-        // Synthesize Career Information for targeted Generals
         function renderGeneralSynthesis(filteredRows, searchVal) {
             const container = document.getElementById('generalSynthesisContainer');
+            if (!container) return;
 
-            // Find unique generals present in filtered result
-            const generalsFound = [...new Set(filteredRows.map(r => r.general_name))];
+            const generalsFound = [...new Set(filteredRows.map(r => r.general_name).filter(Boolean))];
 
             if (generalsFound.length === 1 || (searchVal && generalsFound.length <= 3)) {
                 const targetGeneral = generalsFound[0];
                 const genBattles = appData.filter(b => b.general_name === targetGeneral);
-                const wins = genBattles.filter(b => b.outcome.includes('victory')).length;
-                const losses = genBattles.filter(b => b.outcome.includes('loss')).length;
+                const wins = genBattles.filter(b => b.outcome && b.outcome.toLowerCase().includes('victory')).length;
+                const losses = genBattles.filter(b => b.outcome && b.outcome.toLowerCase().includes('loss')).length;
                 const stalemates = genBattles.filter(b => b.outcome === 'Stalemate').length;
-                const winRate = Math.round((wins / genBattles.length) * 100) || 100;
+                const winRate = genBattles.length > 0 ? Math.round((wins / genBattles.length) * 100) : 100;
                 const nations = [...new Set(genBattles.map(b => b.nationality))].join(', ');
 
                 container.classList.remove('hidden');
@@ -821,7 +899,6 @@
                             </div>
                         </div>
 
-                        <!-- Synthesized Tactical Breakdown Bar -->
                         <div class="space-y-1">
                             <div class="flex justify-between text-xs text-amber-200">
                                 <span>Tactical Outcome Synthesis</span>
@@ -841,10 +918,8 @@
             }
         }
 
-        // Render Battles standard grid or compact list
         function renderBattleGrid(rows, targetEl) {
             if (isCompactView || rows.length >= 25) {
-                // Compact View Mode
                 let tableHtml = `
                     <div class="clay-card overflow-x-auto">
                         <table class="w-full text-left border-collapse text-xs sm:text-sm">
@@ -861,11 +936,11 @@
                             </thead>
                             <tbody class="divide-y divide-amber-900/40">
                 `;
-                rows.forEach((r, idx) => {
-                    const outcomeColor = r.outcome.includes('victory') ? 'text-emerald-400 font-semibold' : 
-                                         r.outcome.includes('loss') ? 'text-red-400 font-semibold' : 'text-amber-400';
+                rows.forEach((r) => {
+                    const outcomeColor = r.outcome && r.outcome.toLowerCase().includes('victory') ? 'text-emerald-400 font-semibold' : 
+                                         r.outcome && r.outcome.toLowerCase().includes('loss') ? 'text-red-400 font-semibold' : 'text-amber-400';
                     tableHtml += `
-                        <tr onclick="openBattleModal(${idx})" class="hover:bg-amber-900/50 cursor-pointer transition">
+                        <tr onclick="openBattleModal('${r.id}')" class="hover:bg-amber-900/50 cursor-pointer transition">
                             <td class="p-3 font-bold text-amber-100">${escapeHtml(r.general_name)}</td>
                             <td class="p-3 text-amber-200">${escapeHtml(r.location)}</td>
                             <td class="p-3"><span class="clay-badge px-2 py-0.5 rounded text-[11px]">${escapeHtml(r.battle_type)}</span></td>
@@ -879,17 +954,15 @@
                 tableHtml += `</tbody></table></div>`;
                 targetEl.innerHTML = tableHtml;
             } else {
-                // Standard Clay Tablet Grid
                 let gridHtml = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
-                rows.forEach((r, idx) => {
-                    const outcomeBadge = r.outcome.includes('victory') ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/60' :
-                                         r.outcome.includes('loss') ? 'bg-red-950/80 text-red-300 border-red-600/60' :
+                rows.forEach((r) => {
+                    const outcomeBadge = r.outcome && r.outcome.toLowerCase().includes('victory') ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/60' :
+                                         r.outcome && r.outcome.toLowerCase().includes('loss') ? 'bg-red-950/80 text-red-300 border-red-600/60' :
                                          'bg-amber-950/80 text-amber-300 border-amber-600/60';
 
                     gridHtml += `
-                        <div onclick="openBattleModal(${idx})" class="clay-card p-5 flex flex-col justify-between hover:scale-[1.03] hover:border-amber-400/90 cursor-pointer transition-all duration-200 shadow-xl group">
+                        <div onclick="openBattleModal('${r.id}')" class="clay-card p-5 flex flex-col justify-between hover:scale-[1.02] hover:border-amber-400/90 cursor-pointer transition-all duration-200 shadow-xl group">
                             <div>
-                                <!-- General & Nation Header -->
                                 <div class="flex justify-between items-start mb-3">
                                     <div>
                                         <h4 class="font-bold text-lg text-amber-100 font-sumerian-header leading-snug group-hover:text-amber-300 transition-colors">
@@ -904,7 +977,6 @@
                                     </span>
                                 </div>
 
-                                <!-- Battle Details -->
                                 <div class="space-y-2 my-4 text-xs sm:text-sm bg-black/20 p-3 rounded-lg border border-amber-900/40">
                                     <div class="flex justify-between">
                                         <span class="text-amber-400/80">Location:</span>
@@ -921,13 +993,12 @@
                                 </div>
                             </div>
 
-                            <!-- Outcome & Scribe -->
                             <div class="pt-3 border-t border-amber-900/50 flex items-center justify-between text-xs">
                                 <span class="px-2.5 py-1 rounded border ${outcomeBadge} font-bold">
                                     ${escapeHtml(r.outcome)}
                                 </span>
                                 <span class="text-amber-400/70 text-[11px] font-semibold flex items-center group-hover:text-amber-200">
-                                    <span>Expand</span> <i class="fa-solid fa-arrow-up-right-from-square ml-1 text.xs"></i>
+                                    <span>Expand</span> <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-xs"></i>
                                 </span>
                             </div>
                         </div>
@@ -938,12 +1009,10 @@
             }
         }
 
-        // Era/Decade Grouping Logic
         function renderGroupedByEra(rows, targetEl) {
             const getEraKey = (dateStr) => {
-                if (dateStr.includes('BC')) {
-                    return "Ancient Era (BC)";
-                }
+                if (!dateStr) return "Historical Eras";
+                if (dateStr.includes('BC')) return "Ancient Era (BC)";
                 const match = dateStr.match(/\b(1[0-9]{3}|20[0-9]{2}|[0-9]{3})\b/);
                 if (match) {
                     const year = parseInt(match[0]);
@@ -971,7 +1040,7 @@
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             ${groups[eraName].map(b => `
-                                <div class="bg-amber-950/60 p-3 rounded-lg border border-amber-800/60 flex justify-between items-center text-xs sm:text-sm">
+                                <div onclick="openBattleModal('${b.id}')" class="bg-amber-950/60 p-3 rounded-lg border border-amber-800/60 flex justify-between items-center text-xs sm:text-sm cursor-pointer hover:border-amber-500 transition">
                                     <div>
                                         <div class="font-bold text-amber-100">${escapeHtml(b.general_name)}</div>
                                         <div class="text-amber-300/80">${escapeHtml(b.location)} (${escapeHtml(b.dates)})</div>
@@ -987,7 +1056,6 @@
             targetEl.innerHTML = html;
         }
 
-        // Nation Grouping Logic
         function renderGroupedByNation(rows, targetEl) {
             const groups = {};
             rows.forEach(r => {
@@ -1007,7 +1075,7 @@
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             ${groups[nation].map(b => `
-                                <div class="bg-amber-950/60 p-3 rounded-lg border border-amber-800/60 flex justify-between items-center text-xs sm:text-sm">
+                                <div onclick="openBattleModal('${b.id}')" class="bg-amber-950/60 p-3 rounded-lg border border-amber-800/60 flex justify-between items-center text-xs sm:text-sm cursor-pointer hover:border-amber-500 transition">
                                     <div>
                                         <div class="font-bold text-amber-100">${escapeHtml(b.general_name)}</div>
                                         <div class="text-amber-300/80">${escapeHtml(b.location)} - ${escapeHtml(b.battle_type)}</div>
@@ -1023,21 +1091,23 @@
             targetEl.innerHTML = html;
         }
 
-        // Populate form datalist and dropdown filters dynamically
         function populateDatalist() {
             const datalist = document.getElementById('existingGeneralsList');
-            const uniqueGenerals = [...new Set(appData.map(b => b.general_name))];
+            if (!datalist) return;
+            const uniqueGenerals = [...new Set(appData.map(b => b.general_name).filter(Boolean))];
             datalist.innerHTML = uniqueGenerals.map(g => `<option value="${escapeHtml(g)}">`).join('');
         }
 
         function populateNationFilter() {
             const select = document.getElementById('nationFilter');
-            const uniqueNations = [...new Set(appData.map(b => b.nationality))].sort();
+            if (!select) return;
+            const currentVal = select.value;
+            const uniqueNations = [...new Set(appData.map(b => b.nationality).filter(Boolean))].sort();
             select.innerHTML = `<option value="ALL">All Nations</option>` + 
                 uniqueNations.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+            select.value = currentVal;
         }
 
-        // Form Submit Handler
         async function handleFormSubmit(event) {
             event.preventDefault();
 
@@ -1050,18 +1120,14 @@
             const dates = document.getElementById('inputDates').value.trim();
             const duration = document.getElementById('inputDuration').value.trim();
 
-            if (!username && !general_name && !nationality && !location && !battle_type && !outcome && !dates && !duration) {
-                showAlertModal("The dispatch form is completely empty! Please fill out the required battle details before sealing the ledger.");
-                return;
-            }
-
             if (!username || !general_name || !nationality || !location || !battle_type || !outcome || !dates || !duration) {
-                showAlertModal("Please complete all required fields in the imperial ledger.");
+                showAlertModal("Missing Dispatch Details", "Please complete all required fields in the imperial ledger before sealing.", "error");
                 return;
             }
 
-            // Create new record object
+            // Create new record with unique ID
             const newRecord = {
+                id: 'battle-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
                 username,
                 general_name,
                 nationality,
@@ -1072,36 +1138,47 @@
                 dates
             };
 
-            const payload = {
-                project_id: 2,
-                item_name: general_name,
-                item_category: battle_type,
-                description: JSON.stringify(newRecord),
-                price: 0.00
-            };
+            // Prepend immediately to state and save locally
+            userCreatedBattles.unshift(newRecord);
+            saveStoredUserBattles(userCreatedBattles);
+            appData.unshift(newRecord);
 
-            // Insert into Supabase generals_emporium_items table if connected
-            try {
-                if (supabaseClient) {
-                    const { data, error } = await supabaseClient.from('generals_emporium_items').insert([payload]).select();
-                    if (error) throw error;
-                    appData.unshift(newRecord);
-                } else {
-                    appData.unshift(newRecord);
+            // Attempt remote insertion if connected
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('battles').insert([{
+                        username,
+                        general_name,
+                        nationality,
+                        battle_type,
+                        outcome,
+                        location,
+                        duration,
+                        dates
+                    }]).select();
+
+                    if (!error && data && data[0]) {
+                        newRecord.id = data[0].id || newRecord.id;
+                    }
+                } catch (err) {
+                    console.warn("Remote sync fallback: Saved locally", err.message);
                 }
-            } catch (err) {
-                console.error("Error inserting record into Supabase:", err.message);
-                appData.unshift(newRecord);
             }
 
-            // Re-populate filters and datalist
+            // Re-populate filters and options
             populateDatalist();
             populateNationFilter();
 
-            // Clear form
+            // Clear form inputs
             clearForm();
 
-            // Switch to viewing tab
+            // Show success notification & switch back to view
+            showAlertModal(
+                "Dispatch Sealed & Recorded",
+                `The tactical record for <strong>${escapeHtml(general_name)}</strong> at <strong>${escapeHtml(location)}</strong> has been successfully transcribed into the archives.`,
+                "success"
+            );
+
             switchTab('view');
         }
 
@@ -1109,10 +1186,28 @@
             document.getElementById('battleForm').reset();
         }
 
-        // Modal alert functions
-        function showAlertModal(msg) {
-            document.getElementById('alertModalMessage').innerText = msg;
-            document.getElementById('alertModal').classList.remove('hidden');
+        function showAlertModal(title, msg, type = 'info') {
+            const modal = document.getElementById('alertModal');
+            const titleEl = document.getElementById('alertModalTitle');
+            const msgEl = document.getElementById('alertModalMessage');
+            const header = document.getElementById('alertHeader');
+            const icon = document.getElementById('alertIcon');
+
+            titleEl.innerText = title;
+            msgEl.innerHTML = msg;
+
+            if (type === 'error') {
+                header.className = "flex items-center space-x-3 text-red-500 mb-4";
+                icon.className = "fa-solid fa-triangle-exclamation text-3xl";
+            } else if (type === 'success') {
+                header.className = "flex items-center space-x-3 text-emerald-400 mb-4";
+                icon.className = "fa-solid fa-circle-check text-3xl";
+            } else {
+                header.className = "flex items-center space-x-3 text-amber-400 mb-4";
+                icon.className = "fa-solid fa-circle-info text-3xl";
+            }
+
+            modal.classList.remove('hidden');
         }
 
         function closeAlertModal() {
@@ -1120,31 +1215,17 @@
         }
 
         // Focused Battle Popup Modal Logic
-        function openBattleModal(index) {
-            const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
-            const nationVal = document.getElementById('nationFilter').value;
-            const typeVal = document.getElementById('typeFilter').value;
-
-            const currentFiltered = appData.filter(item => {
-                const matchesSearch = item.general_name.toLowerCase().includes(searchVal) || 
-                                      item.location.toLowerCase().includes(searchVal) ||
-                                      item.nationality.toLowerCase().includes(searchVal);
-                const matchesNation = nationVal === 'ALL' || item.nationality === nationVal;
-                const matchesType = typeVal === 'ALL' || item.battle_type === typeVal;
-                return matchesSearch && matchesNation && matchesType;
-            });
-
-            const battle = currentFiltered[index] || appData[index];
+        function openBattleModal(battleId) {
+            const battle = appData.find(b => String(b.id) === String(battleId));
             if (!battle) return;
 
-            const outcomeBadge = battle.outcome.includes('victory') ? 'bg-emerald-950 text-emerald-300 border-emerald-500' :
-                                 battle.outcome.includes('loss') ? 'bg-red-950 text-red-300 border-red-500' :
+            const outcomeBadge = battle.outcome && battle.outcome.toLowerCase().includes('victory') ? 'bg-emerald-950 text-emerald-300 border-emerald-500' :
+                                 battle.outcome && battle.outcome.toLowerCase().includes('loss') ? 'bg-red-950 text-red-300 border-red-500' :
                                  'bg-amber-950 text-amber-300 border-amber-500';
 
             const modalContent = document.getElementById('battleModalContent');
             modalContent.innerHTML = `
                 <div class="space-y-6">
-                    <!-- Header -->
                     <div class="border-b border-amber-700/60 pb-4 pr-8">
                         <span class="clay-badge px-3 py-1 rounded-full text-xs font-bold tracking-widest text-amber-300 uppercase inline-block mb-2">
                             <i class="fa-solid fa-shield-halved mr-1"></i> ${escapeHtml(battle.battle_type)} Engagement
@@ -1157,7 +1238,6 @@
                         </p>
                     </div>
 
-                    <!-- Detailed Info Grid -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-black/30 p-4 rounded-xl border border-amber-800/60">
                         <div>
                             <span class="text-xs uppercase text-amber-400/80 font-bold block">Battle Location</span>
@@ -1179,18 +1259,16 @@
                         </div>
                     </div>
 
-                    <!-- Tactical Note / Description -->
                     <div class="bg-amber-950/50 p-4 rounded-xl border border-amber-800/80 text-amber-200/90 text-sm leading-relaxed">
                         <div class="font-bold font-sumerian-header text-amber-300 mb-1 flex items-center space-x-2">
                             <i class="fa-solid fa-scroll text-amber-400"></i>
                             <span>Historical Tactical Summary</span>
                         </div>
                         <p>
-                            This recorded dispatch details the historical tactical engagement led by <strong>${escapeHtml(battle.general_name)}</strong> at <strong>${escapeHtml(battle.location)}</strong>. Resulting in a <strong>${escapeHtml(battle.outcome)}</strong>, this maneuver forms an essential milestone within the high-command records.
+                            This recorded dispatch details the historical engagement led by <strong>${escapeHtml(battle.general_name)}</strong> at <strong>${escapeHtml(battle.location)}</strong>. Resulting in a <strong>${escapeHtml(battle.outcome)}</strong> over a duration of <strong>${escapeHtml(battle.duration)}</strong>, this record remains an essential reference in the high-command archives.
                         </p>
                     </div>
 
-                    <!-- Footer Info -->
                     <div class="flex items-center justify-between text-xs text-amber-400/70 border-t border-amber-800/60 pt-4">
                         <span><i class="fa-solid fa-user-pen mr-1"></i> Transcribed by @${escapeHtml(battle.username)}</span>
                         <span><i class="fa-solid fa-database mr-1"></i> Generals Emporium Ledger</span>
@@ -1221,7 +1299,38 @@
             }
         }
 
-        // Helper to escape HTML string attributes safely
+        // Database settings modal handlers
+        function openDbConfigModal() {
+            document.getElementById('configDbUrl').value = SUPABASE_URL;
+            document.getElementById('configDbKey').value = SUPABASE_ANON_KEY;
+            document.getElementById('dbConfigModal').classList.remove('hidden');
+        }
+
+        function closeDbConfigModal() {
+            document.getElementById('dbConfigModal').classList.add('hidden');
+        }
+
+        function saveDbConfig() {
+            const url = document.getElementById('configDbUrl').value.trim();
+            const key = document.getElementById('configDbKey').value.trim();
+            if (url) localStorage.setItem('emporium_sb_url', url);
+            if (key) localStorage.setItem('emporium_sb_key', key);
+            SUPABASE_URL = url;
+            SUPABASE_ANON_KEY = key;
+            closeDbConfigModal();
+            fetchBattles();
+        }
+
+        function resetDbConfig() {
+            localStorage.removeItem('emporium_sb_url');
+            localStorage.removeItem('emporium_sb_key');
+            SUPABASE_URL = 'https://fnO6q510nPODeejDxMllw.supabase.co';
+            SUPABASE_ANON_KEY = 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
+            closeDbConfigModal();
+            fetchBattles();
+        }
+
+        // Helper to escape HTML strings
         function escapeHtml(str) {
             if (!str) return '';
             return String(str)
