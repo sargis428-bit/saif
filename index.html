@@ -109,6 +109,7 @@
       </div>
     </section>
 
+    <!-- Projects Section -->
     <section id="projects" class="max-w-6xl mx-auto px-4 py-16 border-t border-amber-900/30">
       <div class="mb-8">
         <h2 class="text-2xl sm:text-3xl font-bold text-amber-50 tracking-tight">Featured Projects</h2>
@@ -116,7 +117,7 @@
       </div>
 
       <!-- Projects Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Baseball Master Game -->
         <div class="clean-card p-6 flex flex-col justify-between">
@@ -159,13 +160,14 @@
       </div>
     </section>
 
+    <!-- Interests Section -->
     <section id="interests" class="max-w-6xl mx-auto px-4 py-16 border-t border-amber-900/30">
       <div class="mb-8">
         <h2 class="text-2xl sm:text-3xl font-bold text-amber-50 tracking-tight">Interests & Hobbies</h2>
         <p class="text-stone-400 text-sm mt-1">What drives my curiosity outside of programming.</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div id="interests-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         <!-- Interest 1: Strategy Games -->
         <div class="clean-card p-6">
@@ -244,17 +246,106 @@
   </footer>
 
   <script>
-    // Supabase Initialization matching project configuration
-    const SUPABASE_URL = 'https://fnO6q510nPODeejDxMllw.supabase.co';
+    // Automatic Supabase Initialization
+    const SUPABASE_URL = 'https://5fnO6q510nPODeejDxMllw.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
 
-    let supabase = null;
+    let supabaseClient = null;
     try {
       if (window.supabase && typeof window.supabase.createClient === 'function') {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
     } catch (e) {
-      console.warn("Supabase initialization:", e.message);
+      console.warn("Supabase initialization status:", e.message);
+    }
+
+    // Dynamic data loading from Supabase tables (projects & interests)
+    async function loadPortfolioData() {
+      if (!supabaseClient) return;
+
+      try {
+        // Fetch Projects
+        const { data: projectsData, error: projError } = await supabaseClient
+          .from('projects')
+          .select('*')
+          .order('id', { ascending: true });
+
+        if (!projError && projectsData && projectsData.length > 0) {
+          renderProjects(projectsData);
+        }
+
+        // Fetch Interests
+        const { data: interestsData, error: intError } = await supabaseClient
+          .from('interests')
+          .select('*')
+          .order('id', { ascending: true });
+
+        if (!intError && interestsData && interestsData.length > 0) {
+          renderInterests(interestsData);
+        }
+      } catch (err) {
+        console.warn("Operating with static default content:", err.message);
+      }
+    }
+
+    function renderProjects(projects) {
+      const container = document.getElementById('projects-grid');
+      if (!container) return;
+
+      container.innerHTML = projects.map(p => {
+        const techList = Array.isArray(p.technologies) 
+          ? p.technologies.map(t => `<span>${escapeHtml(t)}</span>`).join(' • ')
+          : '';
+
+        return `
+          <div class="clean-card p-6 flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                ${escapeHtml(p.badge || 'Project')}
+              </span>
+              <h3 class="text-xl font-bold text-amber-100 mt-3 mb-2">${escapeHtml(p.title)}</h3>
+              <p class="text-stone-300 text-sm leading-relaxed mb-4">
+                ${escapeHtml(p.description)}
+              </p>
+            </div>
+            <div>
+              <div class="flex flex-wrap gap-2 mb-4 text-xs font-mono text-stone-400">
+                ${techList}
+              </div>
+              <a href="${escapeHtml(p.link)}" class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:underline">
+                Launch &rarr;
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderInterests(interests) {
+      const container = document.getElementById('interests-grid');
+      if (!container) return;
+
+      container.innerHTML = interests.map(i => `
+        <div class="clean-card p-6">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-lg mb-4">
+            <i class="fa-solid ${escapeHtml(i.icon)}"></i>
+          </div>
+          <h3 class="font-bold text-lg text-amber-100 mb-2">${escapeHtml(i.title)}</h3>
+          <p class="text-stone-300 text-sm leading-relaxed">
+            ${escapeHtml(i.description)}
+          </p>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     // Mobile Menu Toggle
@@ -266,7 +357,6 @@
         mobileMenu.classList.toggle('hidden');
       });
 
-      // Close mobile menu when clicking links
       document.querySelectorAll('#mobile-menu a').forEach(link => {
         link.addEventListener('click', () => {
           mobileMenu.classList.add('hidden');
@@ -278,7 +368,6 @@
     function copyEmail() {
       const email = document.getElementById('email-text').innerText;
       
-      // Fallback copy mechanism for iframe environment compatibility
       const tempTextArea = document.createElement('textarea');
       tempTextArea.value = email;
       document.body.appendChild(tempTextArea);
@@ -294,6 +383,8 @@
         btn.classList.replace('bg-emerald-600', 'bg-amber-600');
       }, 2000);
     }
+
+    window.addEventListener('DOMContentLoaded', loadPortfolioData);
   </script>
 </body>
 </html>
