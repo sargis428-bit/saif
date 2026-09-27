@@ -173,18 +173,10 @@
 
             <!-- View Switcher Tabs & Connection Status -->
             <div class="flex items-center space-x-3">
-<<<<<<< HEAD
                 <div id="dbStatusBtn" title="Database Connection Status" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border bg-black/40 border-amber-700/60 text-amber-300">
                     <span id="dbStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
                     <span id="dbStatusText">Supabase Connected</span>
                 </div>
-=======
-                <button onclick="openDbConfigModal()" id="dbStatusBtn" title="Database Connection Settings" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border bg-black/40 border-amber-700/60 text-amber-300 hover:bg-amber-900/40 transition">
-                    <span id="dbStatusDot" class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
-                    <span id="dbStatusText">Local + Sync</span>
-                    <i class="fa-solid fa-gear text-[10px] ml-1"></i>
-                </button>
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
 
                 <div class="flex items-center space-x-2 bg-black/40 p-1.5 rounded-xl border border-white/10" id="tabContainer">
                     <button id="navViewBtn" onclick="switchTab('view')" class="px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 bg-amber-700 text-amber-100 shadow-inner border border-amber-500">
@@ -478,7 +470,6 @@
         </div>
     </div>
 
-<<<<<<< HEAD
     <script>
         // Automatic Supabase Configuration
         const SUPABASE_URL = 'https://5fnO6q510nPODeejDxMllw.supabase.co';
@@ -487,49 +478,6 @@
         let supabaseClient = null;
 
         // Default catalog of Major Historical Battles with explicit unique IDs
-=======
-    <!-- DATABASE CONFIG MODAL -->
-    <div id="dbConfigModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="max-w-lg w-full bg-stone-900 border-2 border-amber-600 rounded-xl p-6 text-amber-100 shadow-2xl relative">
-            <button onclick="closeDbConfigModal()" class="absolute top-3 right-3 text-amber-400 hover:text-white">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-            <div class="flex items-center space-x-3 text-amber-400 mb-3">
-                <i class="fa-solid fa-database text-2xl"></i>
-                <h3 class="text-xl font-bold font-sumerian-header">Database & Sync Settings</h3>
-            </div>
-            <p class="text-xs text-stone-300 mb-4 leading-relaxed">
-                Generals Emporium maintains an immediate local repository for all added battles. If you wish to connect your own Supabase project for multi-device sync, enter your credentials below.
-            </p>
-            <div class="space-y-4 text-xs">
-                <div>
-                    <label class="block text-amber-300 font-mono mb-1">Supabase Project URL</label>
-                    <input type="text" id="configDbUrl" placeholder="https://your-project.supabase.co" class="w-full px-3 py-2 rounded bg-stone-800 border border-stone-600 text-amber-100 font-mono text-xs">
-                </div>
-                <div>
-                    <label class="block text-amber-300 font-mono mb-1">Supabase Anon Publishable Key</label>
-                    <input type="text" id="configDbKey" placeholder="eyJhbGciOi..." class="w-full px-3 py-2 rounded bg-stone-800 border border-stone-600 text-amber-100 font-mono text-xs">
-                </div>
-            </div>
-            <div class="mt-6 flex justify-between items-center">
-                <button onclick="resetDbConfig()" class="text-xs text-amber-400 hover:underline">Reset Defaults</button>
-                <div class="space-x-2">
-                    <button onclick="closeDbConfigModal()" class="px-4 py-2 rounded border border-stone-600 text-stone-300 text-xs">Cancel</button>
-                    <button onclick="saveDbConfig()" class="px-4 py-2 rounded bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs">Save & Connect</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Supabase configuration - configured for generals_emporium_items table schema
-        let SUPABASE_URL = localStorage.getItem('emporium_sb_url') || 'https://5fnO6q510nPODeejDxMllw.supabase.co';
-        let SUPABASE_ANON_KEY = localStorage.getItem('emporium_sb_key') || 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
-        
-        let supabaseClient = null;
-
-        // Default catalog of 10 Major Historical Battles with explicit unique IDs
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
         const initialBattles = [
             {
                 id: "battle-1",
@@ -645,7 +593,6 @@
 
         // Local storage persistence handlers
         function getStoredUserBattles() {
-<<<<<<< HEAD
             try {
                 const data = localStorage.getItem('emporium_local_battles');
                 return data ? JSON.parse(data) : [];
@@ -682,72 +629,18 @@
 
         async function fetchBattles() {
             if (!supabaseClient) initSupabase();
-=======
-            try {
-                const data = localStorage.getItem('emporium_local_battles');
-                return data ? JSON.parse(data) : [];
-            } catch (err) {
-                console.warn("Could not read local user battles", err);
-                return [];
-            }
-        }
-
-        function saveStoredUserBattles(userBattles) {
-            try {
-                localStorage.setItem('emporium_local_battles', JSON.stringify(userBattles));
-            } catch (err) {
-                console.warn("Could not save user battle locally", err);
-            }
-        }
-
-        // Global State initialized immediately with user items + catalog
-        let userCreatedBattles = getStoredUserBattles();
-        let appData = [...userCreatedBattles, ...initialBattles];
-        let currentTab = 'view';
-        let currentGrouping = 'all'; // 'all', 'era', 'nation'
-        let isCompactView = false;
-
-        function initSupabase() {
-            try {
-                if (window.supabase && typeof window.supabase.createClient === 'function' && SUPABASE_URL.startsWith('http')) {
-                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                } else {
-                    supabaseClient = null;
-                }
-            } catch (err) {
-                console.warn("Supabase initialization status:", err.message);
-                supabaseClient = null;
-            }
-        }
-
-        async function fetchBattles() {
-            initSupabase();
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             if (!supabaseClient) {
                 updateDbStatus(false, "Local Repository");
                 return;
             }
 
             try {
-<<<<<<< HEAD
-=======
-                // Non-blocking query targeting generals_emporium_items
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000);
-
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
                 const { data, error } = await supabaseClient
                     .from('generals_emporium_items')
                     .select('*')
                     .order('id', { ascending: false });
 
-<<<<<<< HEAD
                 if (!error && data && Array.isArray(data)) {
-=======
-                clearTimeout(timeoutId);
-
-                if (!error && data && data.length > 0) {
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
                     const remoteBattles = data.map(item => {
                         let parsed = {};
                         try {
@@ -776,27 +669,16 @@
                     const remoteIds = new Set(remoteBattles.map(d => String(d.id)));
                     const localOnly = userCreatedBattles.filter(b => !remoteIds.has(String(b.id)));
                     appData = [...remoteBattles, ...localOnly, ...initialBattles];
-<<<<<<< HEAD
                     
-=======
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
                     updateDbStatus(true, "Supabase Synced");
                     populateDatalist();
                     populateNationFilter();
                     renderViewScreen();
                 } else {
-<<<<<<< HEAD
                     updateDbStatus(false, "Local Fallback");
                 }
             } catch (err) {
                 updateDbStatus(false, "Local Fallback");
-=======
-                    updateDbStatus(false, "Local Repository");
-                }
-            } catch (err) {
-                console.warn("Operating with local catalog repository:", err.message);
-                updateDbStatus(false, "Local Repository");
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             }
         }
 
@@ -813,14 +695,9 @@
             }
         }
 
-<<<<<<< HEAD
         // Initialize App on DOM load & start background sync polling
         window.addEventListener('DOMContentLoaded', () => {
             initSupabase();
-=======
-        // Initialize App on DOM load
-        window.addEventListener('DOMContentLoaded', () => {
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             populateDatalist();
             populateNationFilter();
             renderViewScreen();
@@ -882,10 +759,6 @@
 
         function setGrouping(groupType) {
             currentGrouping = groupType;
-<<<<<<< HEAD
-=======
-            
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             ['All', 'Era', 'Nation'].forEach(type => {
                 const btn = document.getElementById(`group${type}Btn`);
                 if (type.toLowerCase() === groupType) {
@@ -921,24 +794,13 @@
                 return matchesSearch && matchesNation && matchesType;
             });
 
-<<<<<<< HEAD
-=======
-            // Update Badge Count
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             const countBadge = document.getElementById('recordCountBadge');
             if (countBadge) {
                 countBadge.innerText = `${filtered.length} Battle${filtered.length === 1 ? '' : 's'}`;
             }
 
-<<<<<<< HEAD
             renderGeneralSynthesis(filtered, searchVal);
 
-=======
-            // Synthesize General Profile
-            renderGeneralSynthesis(filtered, searchVal);
-
-            // Render Battles Area
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             const displayArea = document.getElementById('battlesDisplayArea');
             if (!displayArea) return;
 
@@ -1238,10 +1100,6 @@
                 return;
             }
 
-<<<<<<< HEAD
-=======
-            // Local state object
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             const newRecord = {
                 id: 'battle-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
                 username,
@@ -1254,19 +1112,11 @@
                 dates
             };
 
-<<<<<<< HEAD
-=======
-            // Prepend immediately to state and save locally
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             userCreatedBattles.unshift(newRecord);
             saveStoredUserBattles(userCreatedBattles);
             appData.unshift(newRecord);
 
-<<<<<<< HEAD
             if (!supabaseClient) initSupabase();
-=======
-            // Attempt remote insertion into generals_emporium_items table matching schema
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             if (supabaseClient) {
                 try {
                     const payload = {
@@ -1297,7 +1147,6 @@
                         updateDbStatus(true, "Supabase Synced");
                     }
                 } catch (err) {
-<<<<<<< HEAD
                     console.warn("Saved locally, sync fallback triggered:", err.message);
                 }
             }
@@ -1306,20 +1155,6 @@
             populateNationFilter();
             clearForm();
 
-=======
-                    console.warn("Remote sync fallback: Saved locally", err.message);
-                }
-            }
-
-            // Re-populate filters and options
-            populateDatalist();
-            populateNationFilter();
-
-            // Clear form inputs
-            clearForm();
-
-            // Show success notification & switch back to view
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
             showAlertModal(
                 "Dispatch Sealed & Recorded",
                 `The tactical record for <strong>${escapeHtml(general_name)}</strong> at <strong>${escapeHtml(location)}</strong> has been successfully transcribed into the archives and synchronized to Supabase.`,
@@ -1362,10 +1197,6 @@
             document.getElementById('alertModal').classList.add('hidden');
         }
 
-<<<<<<< HEAD
-=======
-        // Focused Battle Popup Modal Logic
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
         function openBattleModal(battleId) {
             const battle = appData.find(b => String(b.id) === String(battleId));
             if (!battle) return;
@@ -1450,41 +1281,6 @@
             }
         }
 
-<<<<<<< HEAD
-=======
-        // Database settings modal handlers
-        function openDbConfigModal() {
-            document.getElementById('configDbUrl').value = SUPABASE_URL;
-            document.getElementById('configDbKey').value = SUPABASE_ANON_KEY;
-            document.getElementById('dbConfigModal').classList.remove('hidden');
-        }
-
-        function closeDbConfigModal() {
-            document.getElementById('dbConfigModal').classList.add('hidden');
-        }
-
-        function saveDbConfig() {
-            const url = document.getElementById('configDbUrl').value.trim();
-            const key = document.getElementById('configDbKey').value.trim();
-            if (url) localStorage.setItem('emporium_sb_url', url);
-            if (key) localStorage.setItem('emporium_sb_key', key);
-            SUPABASE_URL = url;
-            SUPABASE_ANON_KEY = key;
-            closeDbConfigModal();
-            fetchBattles();
-        }
-
-        function resetDbConfig() {
-            localStorage.removeItem('emporium_sb_url');
-            localStorage.removeItem('emporium_sb_key');
-            SUPABASE_URL = 'https://5fnO6q510nPODeejDxMllw.supabase.co';
-            SUPABASE_ANON_KEY = 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
-            closeDbConfigModal();
-            fetchBattles();
-        }
-
-        // Helper to escape HTML strings
->>>>>>> 82411baf579314e8b8ea22d32293a68e5bbd3f0c
         function escapeHtml(str) {
             if (!str) return '';
             return String(str)
