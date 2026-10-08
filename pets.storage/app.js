@@ -1,42 +1,35 @@
 // app.js - Application Logic & Database Operations
 
-// Application State
+// Supabase Connection Configuration
+const SUPABASE_URL = 'https://5fnO6q510nPODeejDxMllw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
+
+let supabase = null;
+try {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch (e) {
+  console.warn("Supabase operating in fallback local storage mode:", e.message);
+}
+
+// Global Application State
 let currentUser = null;
 let currentProfile = null;
-let currentAuthMode = 'signin'; // 'signin' or 'signup'
+let currentAuthMode = 'signin';
 let activeCategory = 'all';
 
-// Local Storage Fallback Keys
+// Storage Keys
 const LOCAL_STORAGE_USERS_KEY = 'marblevet_users_db';
 const LOCAL_STORAGE_POSTS_KEY = 'marblevet_posts_db';
 const LOCAL_STORAGE_REPLIES_KEY = 'marblevet_replies_db';
 
-// DOM Elements
-const screenAuth = document.getElementById('screen-auth');
-const screenUsername = document.getElementById('screen-username');
-const screenApp = document.getElementById('screen-app');
-const screenSettings = document.getElementById('screen-settings');
-
-const navUserBar = document.getElementById('nav-user-bar');
-const navUsername = document.getElementById('nav-username');
-
-const viewHealthLog = document.getElementById('view-health-log');
-const viewCommunity = document.getElementById('view-community');
-
-const tabNavLog = document.getElementById('tab-nav-log');
-const tabNavCommunity = document.getElementById('tab-nav-community');
-
-const modalPost = document.getElementById('modal-post');
-const toast = document.getElementById('toast');
-
-// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
   setupEventListeners();
 });
 
 function initApp() {
-  // Check for active session in LocalStorage or Supabase
   const savedUser = localStorage.getItem('marblevet_session');
   if (savedUser) {
     currentUser = JSON.parse(savedUser);
@@ -46,55 +39,72 @@ function initApp() {
   }
 }
 
-// --- Navigation & Screen Manager ---
 function showScreen(screen) {
-  screenAuth.classList.add('hidden');
-  screenUsername.classList.add('hidden');
-  screenApp.classList.add('hidden');
-  screenSettings.classList.add('hidden');
+  const screens = ['auth', 'username', 'app', 'settings'];
+  screens.forEach(s => {
+    const el = document.getElementById(`screen-${s}`);
+    if (el) el.classList.add('hidden');
+  });
 
-  if (screen === 'auth') screenAuth.classList.remove('hidden');
-  if (screen === 'username') screenUsername.classList.remove('hidden');
-  if (screen === 'app') screenApp.classList.remove('hidden');
-  if (screen === 'settings') screenSettings.classList.remove('hidden');
+  const target = document.getElementById(`screen-${screen}`);
+  if (target) target.classList.remove('hidden');
 }
 
-// --- Event Listeners ---
 function setupEventListeners() {
-  // Auth Form Toggle
-  document.getElementById('tab-signin').addEventListener('click', (e) => setAuthMode('signin', e.target));
-  document.getElementById('tab-signup').addEventListener('click', (e) => setAuthMode('signup', e.target));
+  const tabSignin = document.getElementById('tab-signin');
+  const tabSignup = document.getElementById('tab-signup');
 
-  // Auth Form Submission
-  document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
+  if (tabSignin) tabSignin.addEventListener('click', (e) => setAuthMode('signin', e.target));
+  if (tabSignup) tabSignup.addEventListener('click', (e) => setAuthMode('signup', e.target));
 
-  // GitHub OAuth Button
-  document.getElementById('btn-github-oauth').addEventListener('click', handleGitHubAuth);
+  const authForm = document.getElementById('auth-form');
+  if (authForm) authForm.addEventListener('submit', handleAuthSubmit);
 
-  // Username Form
-  document.getElementById('username-form').addEventListener('submit', handleUsernameSubmit);
+  const authPassInput = document.getElementById('auth-password');
+  if (authPassInput) {
+    authPassInput.addEventListener('input', (e) => updatePasswordChecklist(e.target.value, 'auth'));
+  }
 
-  // Navigation Tabs
-  tabNavLog.addEventListener('click', () => switchAppTab('log'));
-  tabNavCommunity.addEventListener('click', () => switchAppTab('community'));
+  const newPassInput = document.getElementById('new-password');
+  if (newPassInput) {
+    newPassInput.addEventListener('input', (e) => updatePasswordChecklist(e.target.value, 'change'));
+  }
 
-  // Header Buttons
-  document.getElementById('btn-settings').addEventListener('click', () => showScreen('settings'));
-  document.getElementById('btn-close-settings').addEventListener('click', () => showScreen('app'));
-  document.getElementById('btn-signout').addEventListener('click', handleSignOut);
+  const btnGithub = document.getElementById('btn-github-oauth');
+  if (btnGithub) btnGithub.addEventListener('click', handleGitHubAuth);
 
-  // Modal Triggers
-  document.getElementById('btn-create-post').addEventListener('click', () => modalPost.classList.remove('hidden'));
-  document.getElementById('btn-close-modal').addEventListener('click', () => modalPost.classList.add('hidden'));
-  document.getElementById('btn-cancel-post').addEventListener('click', () => modalPost.classList.add('hidden'));
+  const usernameForm = document.getElementById('username-form');
+  if (usernameForm) usernameForm.addEventListener('submit', handleUsernameSubmit);
 
-  // Post Submission
-  document.getElementById('post-form').addEventListener('submit', handleCreatePost);
+  const tabLog = document.getElementById('tab-nav-log');
+  const tabComm = document.getElementById('tab-nav-community');
 
-  // Change Password Form
-  document.getElementById('change-pass-form').addEventListener('submit', handleChangePassword);
+  if (tabLog) tabLog.addEventListener('click', () => switchAppTab('log'));
+  if (tabComm) tabComm.addEventListener('click', () => switchAppTab('community'));
 
-  // Filter Buttons
+  const btnSettings = document.getElementById('btn-settings');
+  const btnCloseSettings = document.getElementById('btn-close-settings');
+  const btnSignout = document.getElementById('btn-signout');
+
+  if (btnSettings) btnSettings.addEventListener('click', () => showScreen('settings'));
+  if (btnCloseSettings) btnCloseSettings.addEventListener('click', () => showScreen('app'));
+  if (btnSignout) btnSignout.addEventListener('click', handleSignOut);
+
+  const modalPost = document.getElementById('modal-post');
+  const btnCreatePost = document.getElementById('btn-create-post');
+  const btnCloseModal = document.getElementById('btn-close-modal');
+  const btnCancelPost = document.getElementById('btn-cancel-post');
+
+  if (btnCreatePost && modalPost) btnCreatePost.addEventListener('click', () => modalPost.classList.remove('hidden'));
+  if (btnCloseModal && modalPost) btnCloseModal.addEventListener('click', () => modalPost.classList.add('hidden'));
+  if (btnCancelPost && modalPost) btnCancelPost.addEventListener('click', () => modalPost.classList.add('hidden'));
+
+  const postForm = document.getElementById('post-form');
+  if (postForm) postForm.addEventListener('submit', handleCreatePost);
+
+  const changePassForm = document.getElementById('change-pass-form');
+  if (changePassForm) changePassForm.addEventListener('submit', handleChangePassword);
+
   document.querySelectorAll('.cat-filter').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('.cat-filter').forEach(b => {
@@ -108,38 +118,93 @@ function setupEventListeners() {
     });
   });
 
-  // Search Input
-  document.getElementById('search-input').addEventListener('input', renderPosts);
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) searchInput.addEventListener('input', renderPosts);
 }
 
-// --- Authentication Logic ---
+function validatePasswordLegitimacy(pass) {
+  if (!pass || typeof pass !== 'string') {
+    return { isValid: false, checks: {}, reasons: ['Password cannot be empty'] };
+  }
+
+  const checks = {
+    length: pass.length >= 8,
+    uppercase: /[A-Z]/.test(pass),
+    lowercase: /[a-z]/.test(pass),
+    number: /[0-9]/.test(pass),
+    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass),
+    notRepetitive: !/(.)\1{3,}/.test(pass),
+    notSequential: !/12345|23456|34567|45678|56789|abcdef|qwerty|password|admin123/i.test(pass)
+  };
+
+  const isValid = checks.length && checks.uppercase && checks.lowercase && 
+                  checks.number && checks.special && checks.notRepetitive && checks.notSequential;
+
+  const reasons = [];
+  if (!checks.length) reasons.push("Must be at least 8 characters long.");
+  if (!checks.uppercase) reasons.push("Must contain at least 1 uppercase letter (A-Z).");
+  if (!checks.lowercase) reasons.push("Must contain at least 1 lowercase letter (a-z).");
+  if (!checks.number) reasons.push("Must contain at least 1 number (0-9).");
+  if (!checks.special) reasons.push("Must contain at least 1 special character (!@#$%^&*).");
+  if (!checks.notRepetitive || !checks.notSequential) reasons.push("Avoid repetitive or common sequential patterns.");
+
+  return { isValid, checks, reasons };
+}
+
+function updatePasswordChecklist(pass, context = 'auth') {
+  const result = validatePasswordLegitimacy(pass);
+  const prefix = context === 'auth' ? 'chk-' : 'chg-';
+
+  const updateItem = (id, passed) => {
+    const elem = document.getElementById(prefix + id);
+    if (!elem) return;
+    const labelText = elem.innerText.replace(/^.*?\s/, '');
+    if (passed) {
+      elem.className = 'text-emerald-400 flex items-center gap-1.5 font-medium';
+      elem.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${labelText}`;
+    } else {
+      elem.className = 'text-stone-400 flex items-center gap-1.5';
+      elem.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i> ${labelText}`;
+    }
+  };
+
+  updateItem('len', result.checks.length);
+  updateItem('upper', result.checks.uppercase);
+  updateItem('lower', result.checks.lowercase);
+  updateItem('num', result.checks.number);
+  updateItem('spec', result.checks.special);
+  updateItem('pattern', result.checks.notRepetitive && result.checks.notSequential);
+}
+
 function setAuthMode(mode, tabElem) {
   currentAuthMode = mode;
-  document.getElementById('tab-signin').className = 'flex-1 py-2 text-center text-sm font-semibold border-b-2 border-transparent text-stone-400 hover:text-stone-200';
-  document.getElementById('tab-signup').className = 'flex-1 py-2 text-center text-sm font-semibold border-b-2 border-transparent text-stone-400 hover:text-stone-200';
-  tabElem.className = 'flex-1 py-2 text-center text-sm font-semibold border-b-2 border-amber-500 text-amber-400';
+  document.getElementById('tab-signin').className = 'flex-1 py-2 text-center text-xs font-semibold border-b-2 border-transparent text-stone-400 hover:text-stone-200';
+  document.getElementById('tab-signup').className = 'flex-1 py-2 text-center text-xs font-semibold border-b-2 border-transparent text-stone-400 hover:text-stone-200';
+  tabElem.className = 'flex-1 py-2 text-center text-xs font-semibold border-b-2 border-amber-500 text-amber-400';
   document.getElementById('auth-submit-btn').innerText = mode === 'signin' ? 'Sign In' : 'Create Account';
-}
 
-function validatePassword(pass) {
-  const minLength = pass.length >= 8;
-  const hasLower = /[a-z]/.test(pass);
-  const hasUpper = /[A-Z]/.test(pass);
-  const hasNumber = /[0-9]/.test(pass);
-  return minLength && hasLower && hasUpper && hasNumber;
+  const checklist = document.getElementById('password-checklist');
+  if (checklist) {
+    checklist.classList.toggle('hidden', mode !== 'signup');
+  }
 }
 
 async function handleAuthSubmit(e) {
   e.preventDefault();
-  const email = document.getElementById('auth-email').value;
+  const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
 
-  if (currentAuthMode === 'signup' && !validatePassword(password)) {
-    showToast('Password must be at least 8 chars long with uppercase, lowercase, and a number.', 'error');
-    return;
+  if (currentAuthMode === 'signup') {
+    const legitimacy = validatePasswordLegitimacy(password);
+    if (!legitimacy.isValid) {
+      return showToast(legitimacy.reasons[0] || 'Password criteria not met.', 'error');
+    }
   }
 
-  // Check if using Supabase client
+  if (password.length < 8) {
+    return showToast('Password must be at least 8 characters long.', 'error');
+  }
+
   if (supabase) {
     if (currentAuthMode === 'signup') {
       const { data, error } = await supabase.auth.signUp({ email, password });
@@ -151,7 +216,6 @@ async function handleAuthSubmit(e) {
       currentUser = data.user;
     }
   } else {
-    // LocalStorage Fallback logic
     const users = JSON.parse(localStorage.getItem(LOCAL_STORAGE_USERS_KEY) || '[]');
     if (currentAuthMode === 'signup') {
       if (users.find(u => u.email === email)) {
@@ -176,10 +240,9 @@ function handleGitHubAuth() {
   if (supabase) {
     supabase.auth.signInWithOAuth({ provider: 'github' });
   } else {
-    // Simulated OAuth flow for standalone demo
-    currentUser = { id: 'usr_github_' + Date.now(), email: 'github_owner@petcare.com' };
+    currentUser = { id: 'usr_github_' + Date.now(), email: 'vet_owner@example.com' };
     localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
-    showToast('Signed in with GitHub OAuth!', 'success');
+    showToast('Signed in with GitHub Auth!', 'success');
     fetchProfile(currentUser.id);
   }
 }
@@ -198,8 +261,8 @@ async function fetchProfile(userId) {
     showScreen('username');
   } else {
     currentProfile = profile;
-    navUsername.innerText = `@${profile.username}`;
-    navUserBar.classList.remove('hidden');
+    document.getElementById('nav-username').innerText = `@${profile.username}`;
+    document.getElementById('nav-user-bar').classList.remove('hidden');
     showScreen('app');
     renderPosts();
   }
@@ -220,9 +283,9 @@ async function handleUsernameSubmit(e) {
     localStorage.setItem('marblevet_profiles', JSON.stringify(profiles));
   }
 
-  navUsername.innerText = `@${username}`;
-  navUserBar.classList.remove('hidden');
-  showToast('Profile updated!', 'success');
+  document.getElementById('nav-username').innerText = `@${username}`;
+  document.getElementById('nav-user-bar').classList.remove('hidden');
+  showToast('Username saved!', 'success');
   showScreen('app');
   renderPosts();
 }
@@ -232,17 +295,18 @@ function handleSignOut() {
   localStorage.removeItem('marblevet_session');
   currentUser = null;
   currentProfile = null;
-  navUserBar.classList.add('hidden');
+  document.getElementById('nav-user-bar').classList.add('hidden');
   showScreen('auth');
   showToast('Signed out successfully.', 'info');
 }
 
-// --- Password Reset / Change ---
 async function handleChangePassword(e) {
   e.preventDefault();
   const newPass = document.getElementById('new-password').value;
-  if (!validatePassword(newPass)) {
-    return showToast('Password does not meet required security criteria.', 'error');
+  const legitimacy = validatePasswordLegitimacy(newPass);
+
+  if (!legitimacy.isValid) {
+    return showToast(legitimacy.reasons[0] || 'Password does not meet safety criteria.', 'error');
   }
 
   if (supabase) {
@@ -254,22 +318,25 @@ async function handleChangePassword(e) {
   showScreen('app');
 }
 
-// --- Tab Switching ---
 function switchAppTab(tab) {
+  const logBtn = document.getElementById('tab-nav-log');
+  const commBtn = document.getElementById('tab-nav-community');
+  const logView = document.getElementById('view-health-log');
+  const commView = document.getElementById('view-community');
+
   if (tab === 'log') {
-    tabNavLog.classList.add('active');
-    tabNavCommunity.classList.remove('active');
-    viewHealthLog.classList.remove('hidden');
-    viewCommunity.classList.add('hidden');
+    logBtn.className = 'active pb-2 border-b-2 border-amber-500 text-amber-400 font-bold transition-all';
+    commBtn.className = 'pb-2 text-stone-400 hover:text-stone-200 transition-all';
+    logView.classList.remove('hidden');
+    commView.classList.add('hidden');
   } else {
-    tabNavCommunity.classList.add('active');
-    tabNavLog.classList.remove('active');
-    viewCommunity.classList.remove('hidden');
-    viewHealthLog.classList.add('hidden');
+    commBtn.className = 'active pb-2 border-b-2 border-amber-500 text-amber-400 font-bold transition-all';
+    logBtn.className = 'pb-2 text-stone-400 hover:text-stone-200 transition-all';
+    commView.classList.remove('hidden');
+    logView.classList.add('hidden');
   }
 }
 
-// --- Posts & Attachments ---
 async function handleCreatePost(e) {
   e.preventDefault();
   const title = document.getElementById('post-title').value;
@@ -282,9 +349,8 @@ async function handleCreatePost(e) {
   if (fileInput.files.length > 0) {
     const file = fileInput.files[0];
     if (file.size > 50 * 1024 * 1024) {
-      return showToast('File size exceeds the 50MB limit.', 'error');
+      return showToast('File size exceeds 50MB limit.', 'error');
     }
-    // Convert to DataURL for immediate browser preview/storage
     file_url = await readFileAsDataURL(file);
   }
 
@@ -308,7 +374,7 @@ async function handleCreatePost(e) {
     localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(posts));
   }
 
-  modalPost.classList.add('hidden');
+  document.getElementById('modal-post').classList.add('hidden');
   document.getElementById('post-form').reset();
   showToast('Entry created successfully!', 'success');
   renderPosts();
@@ -322,43 +388,41 @@ function readFileAsDataURL(file) {
   });
 }
 
-function getStoredPosts() {
-  return JSON.parse(localStorage.getItem(LOCAL_STORAGE_POSTS_KEY) || '[]');
-}
-
 function renderPosts() {
-  const posts = getStoredPosts();
+  const posts = JSON.parse(localStorage.getItem(LOCAL_STORAGE_POSTS_KEY) || '[]');
   const logGrid = document.getElementById('log-grid');
   const communityFeed = document.getElementById('community-feed');
-  const searchQuery = document.getElementById('search-input').value.toLowerCase();
+  const searchQuery = (document.getElementById('search-input')?.value || '').toLowerCase();
 
   // Render Private Health Logs
-  const privatePosts = posts.filter(p => p.visibility === 'private' && p.user_id === currentUser.id);
-  if (privatePosts.length === 0) {
-    logGrid.innerHTML = `
-      <div class="col-span-full clean-card p-8 text-center text-stone-400">
-        <i class="fa-solid fa-notes-medical text-3xl text-amber-500/50 mb-2"></i>
-        <p class="text-sm">No private health logs stored yet. Click "New Record / Question" to add one.</p>
-      </div>`;
-  } else {
-    logGrid.innerHTML = privatePosts.map(p => `
-      <div class="clean-card p-5 flex flex-col justify-between">
-        <div>
-          <div class="flex justify-between items-start mb-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              ${escapeHtml(p.category)}
-            </span>
-            <span class="text-[10px] text-stone-500">${new Date(p.created_at).toLocaleDateString()}</span>
+  const privatePosts = posts.filter(p => p.visibility === 'private' && p.user_id === currentUser?.id);
+  if (logGrid) {
+    if (privatePosts.length === 0) {
+      logGrid.innerHTML = `
+        <div class="col-span-full clean-card p-8 text-center text-stone-400">
+          <i class="fa-solid fa-notes-medical text-3xl text-amber-500/50 mb-2"></i>
+          <p class="text-xs">No private health logs stored yet. Click "New Record / Question" to add one.</p>
+        </div>`;
+    } else {
+      logGrid.innerHTML = privatePosts.map(p => `
+        <div class="clean-card p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                ${escapeHtml(p.category)}
+              </span>
+              <span class="text-[10px] text-stone-500">${new Date(p.created_at).toLocaleDateString()}</span>
+            </div>
+            <h3 class="font-bold text-amber-100 text-sm mb-2">${escapeHtml(p.title)}</h3>
+            <p class="text-xs text-stone-300 leading-relaxed mb-4">${escapeHtml(p.content)}</p>
           </div>
-          <h3 class="font-bold text-amber-100 text-base mb-2">${escapeHtml(p.title)}</h3>
-          <p class="text-xs text-stone-300 leading-relaxed mb-4">${escapeHtml(p.content)}</p>
+          ${p.file_url ? `<div class="pt-2 border-t border-stone-800">${renderAttachment(p.file_url)}</div>` : ''}
         </div>
-        ${p.file_url ? `<div class="pt-2 border-t border-stone-800">${renderAttachment(p.file_url)}</div>` : ''}
-      </div>
-    `).join('');
+      `).join('');
+    }
   }
 
-  // Render Community Advice Posts
+  // Render Public Community Feed
   let publicPosts = posts.filter(p => p.visibility !== 'private');
   if (activeCategory !== 'all') {
     publicPosts = publicPosts.filter(p => p.category === activeCategory);
@@ -367,39 +431,40 @@ function renderPosts() {
     publicPosts = publicPosts.filter(p => p.title.toLowerCase().includes(searchQuery) || p.content.toLowerCase().includes(searchQuery));
   }
 
-  if (publicPosts.length === 0) {
-    communityFeed.innerHTML = `
-      <div class="clean-card p-8 text-center text-stone-400">
-        <i class="fa-solid fa-comments text-3xl text-amber-500/50 mb-2"></i>
-        <p class="text-sm">No community questions found for this category.</p>
-      </div>`;
-  } else {
-    communityFeed.innerHTML = publicPosts.map(p => `
-      <div class="clean-card p-6 space-y-3">
-        <div class="flex justify-between items-center text-xs">
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-amber-400">@${escapeHtml(p.author_username || 'anonymous')}</span>
-            <span class="text-stone-500">•</span>
-            <span class="px-2 py-0.5 rounded bg-stone-900 border border-stone-800 text-[10px] uppercase text-stone-400 font-semibold">${escapeHtml(p.category)}</span>
+  if (communityFeed) {
+    if (publicPosts.length === 0) {
+      communityFeed.innerHTML = `
+        <div class="clean-card p-8 text-center text-stone-400">
+          <i class="fa-solid fa-comments text-3xl text-amber-500/50 mb-2"></i>
+          <p class="text-xs">No community questions found for this category.</p>
+        </div>`;
+    } else {
+      communityFeed.innerHTML = publicPosts.map(p => `
+        <div class="clean-card p-5 space-y-3">
+          <div class="flex justify-between items-center text-xs">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-amber-400">@${escapeHtml(p.author_username || 'anonymous')}</span>
+              <span class="text-stone-500">•</span>
+              <span class="px-2 py-0.5 rounded bg-stone-900 border border-stone-800 text-[10px] uppercase text-stone-400 font-semibold">${escapeHtml(p.category)}</span>
+            </div>
+            <span class="text-stone-500 text-[11px]">${new Date(p.created_at).toLocaleString()}</span>
           </div>
-          <span class="text-stone-500 text-[11px]">${new Date(p.created_at).toLocaleString()}</span>
-        </div>
-        <h3 class="text-lg font-bold text-amber-100">${escapeHtml(p.title)}</h3>
-        <p class="text-sm text-stone-300 leading-relaxed">${escapeHtml(p.content)}</p>
-        ${p.file_url ? `<div class="pt-2">${renderAttachment(p.file_url)}</div>` : ''}
-        
-        <!-- Replies Section -->
-        <div class="pt-4 border-t border-stone-800/80 space-y-3">
-          <div id="replies-container-${p.id}" class="space-y-2">
-            ${renderReplies(p.id)}
+          <h3 class="text-base font-bold text-amber-100">${escapeHtml(p.title)}</h3>
+          <p class="text-xs text-stone-300 leading-relaxed">${escapeHtml(p.content)}</p>
+          ${p.file_url ? `<div class="pt-2">${renderAttachment(p.file_url)}</div>` : ''}
+          
+          <div class="pt-3 border-t border-stone-800/80 space-y-3">
+            <div id="replies-container-${p.id}" class="space-y-2">
+              ${renderReplies(p.id)}
+            </div>
+            <form onsubmit="handlePostReply(event, '${p.id}')" class="flex gap-2 pt-1">
+              <input type="text" id="reply-input-${p.id}" required placeholder="Write a response..." class="flex-1 bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-amber-500" />
+              <button type="submit" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs">Reply</button>
+            </form>
           </div>
-          <form onsubmit="handlePostReply(event, '${p.id}')" class="flex gap-2 pt-2">
-            <input type="text" id="reply-input-${p.id}" required placeholder="Write a solution or reply..." class="flex-1 bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-amber-500" />
-            <button type="submit" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs">Reply</button>
-          </form>
         </div>
-      </div>
-    `).join('');
+      `).join('');
+    }
   }
 }
 
@@ -407,7 +472,7 @@ function renderAttachment(url) {
   if (url.startsWith('data:image')) {
     return `<img src="${url}" class="max-h-48 rounded-lg object-contain bg-stone-950 border border-stone-800" />`;
   }
-  return `<a href="${url}" target="_blank" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View Attached Document</a>`;
+  return `<a href="${url}" target="_blank" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View Attachment</a>`;
 }
 
 function renderReplies(postId) {
@@ -419,7 +484,7 @@ function renderReplies(postId) {
         <span class="font-bold text-amber-300">@${escapeHtml(r.author_username)}</span>
         <span class="text-[10px] text-stone-500">${new Date(r.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
       </div>
-      <p class="text-stone-300">${escapeHtml(r.content)}</p>
+      <p class="text-stone-300 text-xs">${escapeHtml(r.content)}</p>
     </div>
   `).join('');
 }
@@ -427,7 +492,7 @@ function renderReplies(postId) {
 function handlePostReply(e, postId) {
   e.preventDefault();
   const input = document.getElementById(`reply-input-${postId}`);
-  const content = input.value.trim();
+  const content = input ? input.value.trim() : '';
   if (!content) return;
 
   const newReply = {
@@ -443,15 +508,17 @@ function handlePostReply(e, postId) {
   replies.push(newReply);
   localStorage.setItem(LOCAL_STORAGE_REPLIES_KEY, JSON.stringify(replies));
 
-  input.value = '';
+  if (input) input.value = '';
   renderPosts();
 }
 
-// --- Utilities ---
 function showToast(msg, type = 'info') {
+  const toast = document.getElementById('toast');
   const toastMsg = document.getElementById('toast-message');
+  if (!toast || !toastMsg) return;
+
   toastMsg.innerText = msg;
-  toast.className = `fixed bottom-5 right-5 z-50 px-5 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-3 transition-all duration-300 ${
+  toast.className = `fixed bottom-5 right-5 z-50 px-5 py-3 rounded-lg shadow-xl text-xs font-medium flex items-center gap-3 transition-all duration-300 ${
     type === 'error' ? 'bg-rose-900 text-rose-100 border border-rose-700' :
     type === 'success' ? 'bg-emerald-900 text-emerald-100 border border-emerald-700' :
     'bg-stone-800 text-amber-300 border border-amber-900'
