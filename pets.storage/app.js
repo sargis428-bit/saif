@@ -1,25 +1,10 @@
-// app.js - Application Logic & Database Operations
+// app.js - Fixed Application Logic & Authentication
 
-// Supabase Connection Configuration
-const SUPABASE_URL = 'https://5fnO6q510nPODeejDxMllw.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_5fnO6q510nPODeejDxMllw_2OsLVWLV';
-
-let supabase = null;
-try {
-  if (window.supabase && typeof window.supabase.createClient === 'function') {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
-} catch (e) {
-  console.warn("Supabase operating in fallback local storage mode:", e.message);
-}
-
-// Global Application State
 let currentUser = null;
 let currentProfile = null;
 let currentAuthMode = 'signin';
 let activeCategory = 'all';
 
-// Storage Keys
 const LOCAL_STORAGE_USERS_KEY = 'marblevet_users_db';
 const LOCAL_STORAGE_POSTS_KEY = 'marblevet_posts_db';
 const LOCAL_STORAGE_REPLIES_KEY = 'marblevet_replies_db';
@@ -40,70 +25,48 @@ function initApp() {
 }
 
 function showScreen(screen) {
-  const screens = ['auth', 'username', 'app', 'settings'];
-  screens.forEach(s => {
-    const el = document.getElementById(`screen-${s}`);
-    if (el) el.classList.add('hidden');
-  });
+  document.getElementById('screen-auth').classList.add('hidden');
+  document.getElementById('screen-username').classList.add('hidden');
+  document.getElementById('screen-app').classList.add('hidden');
+  document.getElementById('screen-settings').classList.add('hidden');
 
-  const target = document.getElementById(`screen-${screen}`);
-  if (target) target.classList.remove('hidden');
+  if (screen === 'auth') document.getElementById('screen-auth').classList.remove('hidden');
+  if (screen === 'username') document.getElementById('screen-username').classList.remove('hidden');
+  if (screen === 'app') document.getElementById('screen-app').classList.remove('hidden');
+  if (screen === 'settings') document.getElementById('screen-settings').classList.remove('hidden');
 }
 
 function setupEventListeners() {
   const tabSignin = document.getElementById('tab-signin');
   const tabSignup = document.getElementById('tab-signup');
+  const authPassword = document.getElementById('auth-password');
 
-  if (tabSignin) tabSignin.addEventListener('click', (e) => setAuthMode('signin', e.target));
-  if (tabSignup) tabSignup.addEventListener('click', (e) => setAuthMode('signup', e.target));
+  tabSignin.addEventListener('click', () => setAuthMode('signin'));
+  tabSignup.addEventListener('click', () => setAuthMode('signup'));
 
-  const authForm = document.getElementById('auth-form');
-  if (authForm) authForm.addEventListener('submit', handleAuthSubmit);
+  authPassword.addEventListener('input', (e) => {
+    if (currentAuthMode === 'signup') {
+      updatePasswordRequirements(e.target.value);
+    }
+  });
 
-  const authPassInput = document.getElementById('auth-password');
-  if (authPassInput) {
-    authPassInput.addEventListener('input', (e) => updatePasswordChecklist(e.target.value, 'auth'));
-  }
+  document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
+  document.getElementById('btn-github-oauth').addEventListener('click', handleGitHubAuth);
+  document.getElementById('username-form').addEventListener('submit', handleUsernameSubmit);
 
-  const newPassInput = document.getElementById('new-password');
-  if (newPassInput) {
-    newPassInput.addEventListener('input', (e) => updatePasswordChecklist(e.target.value, 'change'));
-  }
+  document.getElementById('tab-nav-log').addEventListener('click', () => switchAppTab('log'));
+  document.getElementById('tab-nav-community').addEventListener('click', () => switchAppTab('community'));
 
-  const btnGithub = document.getElementById('btn-github-oauth');
-  if (btnGithub) btnGithub.addEventListener('click', handleGitHubAuth);
+  document.getElementById('btn-settings').addEventListener('click', () => showScreen('settings'));
+  document.getElementById('btn-close-settings').addEventListener('click', () => showScreen('app'));
+  document.getElementById('btn-signout').addEventListener('click', handleSignOut);
 
-  const usernameForm = document.getElementById('username-form');
-  if (usernameForm) usernameForm.addEventListener('submit', handleUsernameSubmit);
+  document.getElementById('btn-create-post').addEventListener('click', () => document.getElementById('modal-post').classList.remove('hidden'));
+  document.getElementById('btn-close-modal').addEventListener('click', () => document.getElementById('modal-post').classList.add('hidden'));
+  document.getElementById('btn-cancel-post').addEventListener('click', () => document.getElementById('modal-post').classList.add('hidden'));
 
-  const tabLog = document.getElementById('tab-nav-log');
-  const tabComm = document.getElementById('tab-nav-community');
-
-  if (tabLog) tabLog.addEventListener('click', () => switchAppTab('log'));
-  if (tabComm) tabComm.addEventListener('click', () => switchAppTab('community'));
-
-  const btnSettings = document.getElementById('btn-settings');
-  const btnCloseSettings = document.getElementById('btn-close-settings');
-  const btnSignout = document.getElementById('btn-signout');
-
-  if (btnSettings) btnSettings.addEventListener('click', () => showScreen('settings'));
-  if (btnCloseSettings) btnCloseSettings.addEventListener('click', () => showScreen('app'));
-  if (btnSignout) btnSignout.addEventListener('click', handleSignOut);
-
-  const modalPost = document.getElementById('modal-post');
-  const btnCreatePost = document.getElementById('btn-create-post');
-  const btnCloseModal = document.getElementById('btn-close-modal');
-  const btnCancelPost = document.getElementById('btn-cancel-post');
-
-  if (btnCreatePost && modalPost) btnCreatePost.addEventListener('click', () => modalPost.classList.remove('hidden'));
-  if (btnCloseModal && modalPost) btnCloseModal.addEventListener('click', () => modalPost.classList.add('hidden'));
-  if (btnCancelPost && modalPost) btnCancelPost.addEventListener('click', () => modalPost.classList.add('hidden'));
-
-  const postForm = document.getElementById('post-form');
-  if (postForm) postForm.addEventListener('submit', handleCreatePost);
-
-  const changePassForm = document.getElementById('change-pass-form');
-  if (changePassForm) changePassForm.addEventListener('submit', handleChangePassword);
+  document.getElementById('post-form').addEventListener('submit', handleCreatePost);
+  document.getElementById('change-pass-form').addEventListener('submit', handleChangePassword);
 
   document.querySelectorAll('.cat-filter').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -118,74 +81,52 @@ function setupEventListeners() {
     });
   });
 
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) searchInput.addEventListener('input', renderPosts);
+  document.getElementById('search-input').addEventListener('input', renderPosts);
 }
 
-function validatePasswordLegitimacy(pass) {
-  if (!pass || typeof pass !== 'string') {
-    return { isValid: false, checks: {}, reasons: ['Password cannot be empty'] };
-  }
-
-  const checks = {
-    length: pass.length >= 8,
-    uppercase: /[A-Z]/.test(pass),
-    lowercase: /[a-z]/.test(pass),
-    number: /[0-9]/.test(pass),
-    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass),
-    notRepetitive: !/(.)\1{3,}/.test(pass),
-    notSequential: !/12345|23456|34567|45678|56789|abcdef|qwerty|password|admin123/i.test(pass)
-  };
-
-  const isValid = checks.length && checks.uppercase && checks.lowercase && 
-                  checks.number && checks.special && checks.notRepetitive && checks.notSequential;
-
-  const reasons = [];
-  if (!checks.length) reasons.push("Must be at least 8 characters long.");
-  if (!checks.uppercase) reasons.push("Must contain at least 1 uppercase letter (A-Z).");
-  if (!checks.lowercase) reasons.push("Must contain at least 1 lowercase letter (a-z).");
-  if (!checks.number) reasons.push("Must contain at least 1 number (0-9).");
-  if (!checks.special) reasons.push("Must contain at least 1 special character (!@#$%^&*).");
-  if (!checks.notRepetitive || !checks.notSequential) reasons.push("Avoid repetitive or common sequential patterns.");
-
-  return { isValid, checks, reasons };
-}
-
-function updatePasswordChecklist(pass, context = 'auth') {
-  const result = validatePasswordLegitimacy(pass);
-  const prefix = context === 'auth' ? 'chk-' : 'chg-';
-
-  const updateItem = (id, passed) => {
-    const elem = document.getElementById(prefix + id);
-    if (!elem) return;
-    const labelText = elem.innerText.replace(/^.*?\s/, '');
-    if (passed) {
-      elem.className = 'text-emerald-400 flex items-center gap-1.5 font-medium';
-      elem.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${labelText}`;
-    } else {
-      elem.className = 'text-stone-400 flex items-center gap-1.5';
-      elem.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i> ${labelText}`;
-    }
-  };
-
-  updateItem('len', result.checks.length);
-  updateItem('upper', result.checks.uppercase);
-  updateItem('lower', result.checks.lowercase);
-  updateItem('num', result.checks.number);
-  updateItem('spec', result.checks.special);
-  updateItem('pattern', result.checks.notRepetitive && result.checks.notSequential);
-}
-
-function setAuthMode(mode, tabElem) {
+function setAuthMode(mode) {
   currentAuthMode = mode;
-  document.getElementById('tab-signin').className = 'flex-1 py-2 text-center text-xs font-semibold border-b-2 border-transparent text-stone-400 hover:text-stone-200';
-  document.getElementById('tab-signup').className = 'flex-1 py-2 text-center text-xs font-semibold border-b-2 border-transparent text-stone-400 hover:text-stone-200';
-  tabElem.className = 'flex-1 py-2 text-center text-xs font-semibold border-b-2 border-amber-500 text-amber-400';
-  document.getElementById('auth-submit-btn').innerText = mode === 'signin' ? 'Sign In' : 'Create Account';
+  const reqBox = document.getElementById('password-requirements');
 
-  const checklist = document.getElementById('password-checklist');
-  if (checklist) {
-    checklist.classList.toggle('hidden', mode !== 'signup');
+  if (mode === 'signin') {
+    document.getElementById('tab-signin').className = 'flex-1 py-2 text-center text-sm font-semibold border-b-2 border-amber-500 text-amber-400';
+    document.getElementById('tab-signup').className = 'flex-1 py-2 text-center text-sm font-semibold border-b-2 border-transparent text-stone-400 hover:text-stone-200';
+    document.getElementById('auth-submit-btn').innerText = 'Sign In';
+    reqBox.classList.add('hidden');
+  } else {
+    document.getElementById('tab-signup').className = 'flex-1 py-2 text-center text-sm font-semibold border-b-2 border-amber-500 text-amber-400';
+    document.getElementById('tab-signin').className = 'flex-1 py-2 text-center text-sm font-semibold border-b-2 border-transparent text-stone-400 hover:text-stone-200';
+    document.getElementById('auth-submit-btn').innerText = 'Create Account';
+    reqBox.classList.remove('hidden');
+    updatePasswordRequirements(document.getElementById('auth-password').value);
+  }
+}
+
+function checkPasswordStrength(pass) {
+  return {
+    len: pass.length >= 8,
+    upper: /[A-Z]/.test(pass),
+    lower: /[a-z]/.test(pass),
+    num: /[0-9]/.test(pass)
+  };
+}
+
+function updatePasswordRequirements(pass) {
+  const res = checkPasswordStrength(pass);
+  updateReqItem('req-len', res.len, 'At least 8 characters');
+  updateReqItem('req-upper', res.upper, 'An uppercase letter (A-Z)');
+  updateReqItem('req-lower', res.lower, 'A lowercase letter (a-z)');
+  updateReqItem('req-num', res.num, 'A number (0-9)');
+}
+
+function updateReqItem(id, isValid, text) {
+  const el = document.getElementById(id);
+  if (isValid) {
+    el.className = 'text-emerald-400 flex items-center gap-1.5';
+    el.innerHTML = `<i class="fa-solid fa-check w-3"></i> ${text}`;
+  } else {
+    el.className = 'text-rose-400 flex items-center gap-1.5';
+    el.innerHTML = `<i class="fa-solid fa-xmark w-3"></i> ${text}`;
   }
 }
 
@@ -194,62 +135,67 @@ async function handleAuthSubmit(e) {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
 
+  if (!email || !password) {
+    return showToast('Please fill in all fields.', 'error');
+  }
+
   if (currentAuthMode === 'signup') {
-    const legitimacy = validatePasswordLegitimacy(password);
-    if (!legitimacy.isValid) {
-      return showToast(legitimacy.reasons[0] || 'Password criteria not met.', 'error');
+    const check = checkPasswordStrength(password);
+    if (!check.len || !check.upper || !check.lower || !check.num) {
+      return showToast('Password must be at least 8 characters long with uppercase, lowercase, and numbers.', 'error');
     }
   }
 
-  if (password.length < 8) {
-    return showToast('Password must be at least 8 characters long.', 'error');
-  }
-
-  if (supabase) {
-    if (currentAuthMode === 'signup') {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) return showToast(error.message, 'error');
-      currentUser = data.user;
-    } else {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return showToast(error.message, 'error');
-      currentUser = data.user;
-    }
-  } else {
-    const users = JSON.parse(localStorage.getItem(LOCAL_STORAGE_USERS_KEY) || '[]');
-    if (currentAuthMode === 'signup') {
-      if (users.find(u => u.email === email)) {
-        return showToast('User already exists with this email.', 'error');
+  try {
+    if (window.supabase && supabase) {
+      if (currentAuthMode === 'signup') {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) return showToast(error.message, 'error');
+        currentUser = data.user;
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) return showToast(error.message, 'error');
+        currentUser = data.user;
       }
-      currentUser = { id: 'usr_' + Date.now(), email };
-      users.push({ ...currentUser, password });
-      localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(users));
     } else {
-      const found = users.find(u => u.email === email && u.password === password);
-      if (!found) return showToast('Invalid email or password.', 'error');
-      currentUser = { id: found.id, email: found.email };
+      // LocalStorage Fallback Flow
+      const users = JSON.parse(localStorage.getItem(LOCAL_STORAGE_USERS_KEY) || '[]');
+      if (currentAuthMode === 'signup') {
+        if (users.find(u => u.email === email)) {
+          return showToast('Account already exists for this email.', 'error');
+        }
+        currentUser = { id: 'usr_' + Date.now(), email };
+        users.push({ ...currentUser, password });
+        localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(users));
+      } else {
+        const found = users.find(u => u.email === email && u.password === password);
+        if (!found) return showToast('Invalid email or password.', 'error');
+        currentUser = { id: found.id, email: found.email };
+      }
     }
-  }
 
-  localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
-  showToast('Signed in successfully!', 'success');
-  fetchProfile(currentUser.id);
+    localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
+    showToast(currentAuthMode === 'signup' ? 'Account created successfully!' : 'Signed in successfully!', 'success');
+    fetchProfile(currentUser.id);
+  } catch (err) {
+    showToast(err.message || 'An unexpected error occurred.', 'error');
+  }
 }
 
 function handleGitHubAuth() {
-  if (supabase) {
+  if (window.supabase && supabase) {
     supabase.auth.signInWithOAuth({ provider: 'github' });
   } else {
-    currentUser = { id: 'usr_github_' + Date.now(), email: 'vet_owner@example.com' };
+    currentUser = { id: 'usr_github_' + Date.now(), email: 'github_user@petcare.com' };
     localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
-    showToast('Signed in with GitHub Auth!', 'success');
+    showToast('Signed in with GitHub OAuth!', 'success');
     fetchProfile(currentUser.id);
   }
 }
 
 async function fetchProfile(userId) {
   let profile = null;
-  if (supabase) {
+  if (window.supabase && supabase) {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     profile = data;
   } else {
@@ -275,7 +221,7 @@ async function handleUsernameSubmit(e) {
 
   currentProfile = { id: currentUser.id, username, created_at: new Date().toISOString() };
 
-  if (supabase) {
+  if (window.supabase && supabase) {
     await supabase.from('profiles').upsert(currentProfile);
   } else {
     const profiles = JSON.parse(localStorage.getItem('marblevet_profiles') || '{}');
@@ -285,13 +231,13 @@ async function handleUsernameSubmit(e) {
 
   document.getElementById('nav-username').innerText = `@${username}`;
   document.getElementById('nav-user-bar').classList.remove('hidden');
-  showToast('Username saved!', 'success');
+  showToast('Username configured!', 'success');
   showScreen('app');
   renderPosts();
 }
 
 function handleSignOut() {
-  if (supabase) supabase.auth.signOut();
+  if (window.supabase && supabase) supabase.auth.signOut();
   localStorage.removeItem('marblevet_session');
   currentUser = null;
   currentProfile = null;
@@ -303,46 +249,41 @@ function handleSignOut() {
 async function handleChangePassword(e) {
   e.preventDefault();
   const newPass = document.getElementById('new-password').value;
-  const legitimacy = validatePasswordLegitimacy(newPass);
+  const check = checkPasswordStrength(newPass);
 
-  if (!legitimacy.isValid) {
-    return showToast(legitimacy.reasons[0] || 'Password does not meet safety criteria.', 'error');
+  if (!check.len || !check.upper || !check.lower || !check.num) {
+    return showToast('Password must be at least 8 characters long with uppercase, lowercase, and numbers.', 'error');
   }
 
-  if (supabase) {
+  if (window.supabase && supabase) {
     const { error } = await supabase.auth.updateUser({ password: newPass });
     if (error) return showToast(error.message, 'error');
   }
-  showToast('Password updated successfully!', 'success');
+  showToast('Password updated!', 'success');
   document.getElementById('change-pass-form').reset();
   showScreen('app');
 }
 
 function switchAppTab(tab) {
-  const logBtn = document.getElementById('tab-nav-log');
-  const commBtn = document.getElementById('tab-nav-community');
-  const logView = document.getElementById('view-health-log');
-  const commView = document.getElementById('view-community');
-
   if (tab === 'log') {
-    logBtn.className = 'active pb-2 border-b-2 border-amber-500 text-amber-400 font-bold transition-all';
-    commBtn.className = 'pb-2 text-stone-400 hover:text-stone-200 transition-all';
-    logView.classList.remove('hidden');
-    commView.classList.add('hidden');
+    document.getElementById('tab-nav-log').classList.add('active');
+    document.getElementById('tab-nav-community').classList.remove('active');
+    document.getElementById('view-health-log').classList.remove('hidden');
+    document.getElementById('view-community').classList.add('hidden');
   } else {
-    commBtn.className = 'active pb-2 border-b-2 border-amber-500 text-amber-400 font-bold transition-all';
-    logBtn.className = 'pb-2 text-stone-400 hover:text-stone-200 transition-all';
-    commView.classList.remove('hidden');
-    logView.classList.add('hidden');
+    document.getElementById('tab-nav-community').classList.add('active');
+    document.getElementById('tab-nav-log').classList.remove('active');
+    document.getElementById('view-community').classList.remove('hidden');
+    document.getElementById('view-health-log').classList.add('hidden');
   }
 }
 
 async function handleCreatePost(e) {
   e.preventDefault();
-  const title = document.getElementById('post-title').value;
+  const title = document.getElementById('post-title').value.trim();
   const category = document.getElementById('post-category').value;
   const visibility = document.getElementById('post-visibility').value;
-  const content = document.getElementById('post-content').value;
+  const content = document.getElementById('post-content').value.trim();
   const fileInput = document.getElementById('post-file');
 
   let file_url = null;
@@ -366,7 +307,7 @@ async function handleCreatePost(e) {
     created_at: new Date().toISOString()
   };
 
-  if (supabase) {
+  if (window.supabase && supabase) {
     await supabase.from('posts').insert([newPost]);
   } else {
     const posts = JSON.parse(localStorage.getItem(LOCAL_STORAGE_POSTS_KEY) || '[]');
@@ -376,7 +317,7 @@ async function handleCreatePost(e) {
 
   document.getElementById('modal-post').classList.add('hidden');
   document.getElementById('post-form').reset();
-  showToast('Entry created successfully!', 'success');
+  showToast('Entry created!', 'success');
   renderPosts();
 }
 
@@ -388,41 +329,41 @@ function readFileAsDataURL(file) {
   });
 }
 
+function getStoredPosts() {
+  return JSON.parse(localStorage.getItem(LOCAL_STORAGE_POSTS_KEY) || '[]');
+}
+
 function renderPosts() {
-  const posts = JSON.parse(localStorage.getItem(LOCAL_STORAGE_POSTS_KEY) || '[]');
+  const posts = getStoredPosts();
   const logGrid = document.getElementById('log-grid');
   const communityFeed = document.getElementById('community-feed');
-  const searchQuery = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const searchQuery = document.getElementById('search-input').value.toLowerCase();
 
-  // Render Private Health Logs
-  const privatePosts = posts.filter(p => p.visibility === 'private' && p.user_id === currentUser?.id);
-  if (logGrid) {
-    if (privatePosts.length === 0) {
-      logGrid.innerHTML = `
-        <div class="col-span-full clean-card p-8 text-center text-stone-400">
-          <i class="fa-solid fa-notes-medical text-3xl text-amber-500/50 mb-2"></i>
-          <p class="text-xs">No private health logs stored yet. Click "New Record / Question" to add one.</p>
-        </div>`;
-    } else {
-      logGrid.innerHTML = privatePosts.map(p => `
-        <div class="clean-card p-5 flex flex-col justify-between">
-          <div>
-            <div class="flex justify-between items-start mb-2">
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                ${escapeHtml(p.category)}
-              </span>
-              <span class="text-[10px] text-stone-500">${new Date(p.created_at).toLocaleDateString()}</span>
-            </div>
-            <h3 class="font-bold text-amber-100 text-sm mb-2">${escapeHtml(p.title)}</h3>
-            <p class="text-xs text-stone-300 leading-relaxed mb-4">${escapeHtml(p.content)}</p>
+  const privatePosts = posts.filter(p => p.visibility === 'private' && p.user_id === currentUser.id);
+  if (privatePosts.length === 0) {
+    logGrid.innerHTML = `
+      <div class="col-span-full clean-card p-8 text-center text-stone-400">
+        <i class="fa-solid fa-notes-medical text-3xl text-amber-500/50 mb-2"></i>
+        <p class="text-sm">No private health logs stored yet.</p>
+      </div>`;
+  } else {
+    logGrid.innerHTML = privatePosts.map(p => `
+      <div class="clean-card p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              ${escapeHtml(p.category)}
+            </span>
+            <span class="text-[10px] text-stone-500">${new Date(p.created_at).toLocaleDateString()}</span>
           </div>
-          ${p.file_url ? `<div class="pt-2 border-t border-stone-800">${renderAttachment(p.file_url)}</div>` : ''}
+          <h3 class="font-bold text-amber-100 text-base mb-2">${escapeHtml(p.title)}</h3>
+          <p class="text-xs text-stone-300 leading-relaxed mb-4">${escapeHtml(p.content)}</p>
         </div>
-      `).join('');
-    }
+        ${p.file_url ? `<div class="pt-2 border-t border-stone-800">${renderAttachment(p.file_url)}</div>` : ''}
+      </div>
+    `).join('');
   }
 
-  // Render Public Community Feed
   let publicPosts = posts.filter(p => p.visibility !== 'private');
   if (activeCategory !== 'all') {
     publicPosts = publicPosts.filter(p => p.category === activeCategory);
@@ -431,40 +372,28 @@ function renderPosts() {
     publicPosts = publicPosts.filter(p => p.title.toLowerCase().includes(searchQuery) || p.content.toLowerCase().includes(searchQuery));
   }
 
-  if (communityFeed) {
-    if (publicPosts.length === 0) {
-      communityFeed.innerHTML = `
-        <div class="clean-card p-8 text-center text-stone-400">
-          <i class="fa-solid fa-comments text-3xl text-amber-500/50 mb-2"></i>
-          <p class="text-xs">No community questions found for this category.</p>
-        </div>`;
-    } else {
-      communityFeed.innerHTML = publicPosts.map(p => `
-        <div class="clean-card p-5 space-y-3">
-          <div class="flex justify-between items-center text-xs">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-amber-400">@${escapeHtml(p.author_username || 'anonymous')}</span>
-              <span class="text-stone-500">•</span>
-              <span class="px-2 py-0.5 rounded bg-stone-900 border border-stone-800 text-[10px] uppercase text-stone-400 font-semibold">${escapeHtml(p.category)}</span>
-            </div>
-            <span class="text-stone-500 text-[11px]">${new Date(p.created_at).toLocaleString()}</span>
+  if (publicPosts.length === 0) {
+    communityFeed.innerHTML = `
+      <div class="clean-card p-8 text-center text-stone-400">
+        <i class="fa-solid fa-comments text-3xl text-amber-500/50 mb-2"></i>
+        <p class="text-sm">No community questions found.</p>
+      </div>`;
+  } else {
+    communityFeed.innerHTML = publicPosts.map(p => `
+      <div class="clean-card p-6 space-y-3">
+        <div class="flex justify-between items-center text-xs">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-amber-400">@${escapeHtml(p.author_username || 'anonymous')}</span>
+            <span class="text-stone-500">•</span>
+            <span class="px-2 py-0.5 rounded bg-stone-900 border border-stone-800 text-[10px] uppercase text-stone-400 font-semibold">${escapeHtml(p.category)}</span>
           </div>
-          <h3 class="text-base font-bold text-amber-100">${escapeHtml(p.title)}</h3>
-          <p class="text-xs text-stone-300 leading-relaxed">${escapeHtml(p.content)}</p>
-          ${p.file_url ? `<div class="pt-2">${renderAttachment(p.file_url)}</div>` : ''}
-          
-          <div class="pt-3 border-t border-stone-800/80 space-y-3">
-            <div id="replies-container-${p.id}" class="space-y-2">
-              ${renderReplies(p.id)}
-            </div>
-            <form onsubmit="handlePostReply(event, '${p.id}')" class="flex gap-2 pt-1">
-              <input type="text" id="reply-input-${p.id}" required placeholder="Write a response..." class="flex-1 bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-amber-500" />
-              <button type="submit" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs">Reply</button>
-            </form>
-          </div>
+          <span class="text-stone-500 text-[11px]">${new Date(p.created_at).toLocaleString()}</span>
         </div>
-      `).join('');
-    }
+        <h3 class="text-lg font-bold text-amber-100">${escapeHtml(p.title)}</h3>
+        <p class="text-sm text-stone-300 leading-relaxed">${escapeHtml(p.content)}</p>
+        ${p.file_url ? `<div class="pt-2">${renderAttachment(p.file_url)}</div>` : ''}
+      </div>
+    `).join('');
   }
 }
 
@@ -475,50 +404,11 @@ function renderAttachment(url) {
   return `<a href="${url}" target="_blank" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View Attachment</a>`;
 }
 
-function renderReplies(postId) {
-  const replies = JSON.parse(localStorage.getItem(LOCAL_STORAGE_REPLIES_KEY) || '[]').filter(r => r.post_id === postId);
-  if (replies.length === 0) return '<p class="text-[11px] text-stone-500 italic">No replies yet. Be the first to help!</p>';
-  return replies.map(r => `
-    <div class="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800/60 text-xs">
-      <div class="flex justify-between items-center mb-1">
-        <span class="font-bold text-amber-300">@${escapeHtml(r.author_username)}</span>
-        <span class="text-[10px] text-stone-500">${new Date(r.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-      </div>
-      <p class="text-stone-300 text-xs">${escapeHtml(r.content)}</p>
-    </div>
-  `).join('');
-}
-
-function handlePostReply(e, postId) {
-  e.preventDefault();
-  const input = document.getElementById(`reply-input-${postId}`);
-  const content = input ? input.value.trim() : '';
-  if (!content) return;
-
-  const newReply = {
-    id: 'rep_' + Date.now(),
-    post_id: postId,
-    user_id: currentUser.id,
-    author_username: currentProfile.username,
-    content,
-    created_at: new Date().toISOString()
-  };
-
-  const replies = JSON.parse(localStorage.getItem(LOCAL_STORAGE_REPLIES_KEY) || '[]');
-  replies.push(newReply);
-  localStorage.setItem(LOCAL_STORAGE_REPLIES_KEY, JSON.stringify(replies));
-
-  if (input) input.value = '';
-  renderPosts();
-}
-
 function showToast(msg, type = 'info') {
-  const toast = document.getElementById('toast');
   const toastMsg = document.getElementById('toast-message');
-  if (!toast || !toastMsg) return;
-
+  const toast = document.getElementById('toast');
   toastMsg.innerText = msg;
-  toast.className = `fixed bottom-5 right-5 z-50 px-5 py-3 rounded-lg shadow-xl text-xs font-medium flex items-center gap-3 transition-all duration-300 ${
+  toast.className = `fixed bottom-5 right-5 z-50 px-5 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-3 transition-all duration-300 ${
     type === 'error' ? 'bg-rose-900 text-rose-100 border border-rose-700' :
     type === 'success' ? 'bg-emerald-900 text-emerald-100 border border-emerald-700' :
     'bg-stone-800 text-amber-300 border border-amber-900'
