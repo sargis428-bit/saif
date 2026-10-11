@@ -1,4 +1,4 @@
-// app.js - Fixed Application Logic & Authentication
+// app.js - Application Logic & Authentication
 
 let currentUser = null;
 let currentProfile = null;
@@ -147,18 +147,18 @@ async function handleAuthSubmit(e) {
   }
 
   try {
-    if (window.supabase && supabase) {
+    if (supabaseClient) {
       if (currentAuthMode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
         if (error) return showToast(error.message, 'error');
         currentUser = data.user;
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) return showToast(error.message, 'error');
         currentUser = data.user;
       }
     } else {
-      // LocalStorage Fallback Flow
+      // LocalStorage Fallback
       const users = JSON.parse(localStorage.getItem(LOCAL_STORAGE_USERS_KEY) || '[]');
       if (currentAuthMode === 'signup') {
         if (users.find(u => u.email === email)) {
@@ -183,8 +183,8 @@ async function handleAuthSubmit(e) {
 }
 
 function handleGitHubAuth() {
-  if (window.supabase && supabase) {
-    supabase.auth.signInWithOAuth({ provider: 'github' });
+  if (supabaseClient) {
+    supabaseClient.auth.signInWithOAuth({ provider: 'github' });
   } else {
     currentUser = { id: 'usr_github_' + Date.now(), email: 'github_user@petcare.com' };
     localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
@@ -195,8 +195,8 @@ function handleGitHubAuth() {
 
 async function fetchProfile(userId) {
   let profile = null;
-  if (window.supabase && supabase) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  if (supabaseClient) {
+    const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
     profile = data;
   } else {
     const profiles = JSON.parse(localStorage.getItem('marblevet_profiles') || '{}');
@@ -221,8 +221,8 @@ async function handleUsernameSubmit(e) {
 
   currentProfile = { id: currentUser.id, username, created_at: new Date().toISOString() };
 
-  if (window.supabase && supabase) {
-    await supabase.from('profiles').upsert(currentProfile);
+  if (supabaseClient) {
+    await supabaseClient.from('profiles').upsert(currentProfile);
   } else {
     const profiles = JSON.parse(localStorage.getItem('marblevet_profiles') || '{}');
     profiles[currentUser.id] = currentProfile;
@@ -237,7 +237,7 @@ async function handleUsernameSubmit(e) {
 }
 
 function handleSignOut() {
-  if (window.supabase && supabase) supabase.auth.signOut();
+  if (supabaseClient) supabaseClient.auth.signOut();
   localStorage.removeItem('marblevet_session');
   currentUser = null;
   currentProfile = null;
@@ -255,8 +255,8 @@ async function handleChangePassword(e) {
     return showToast('Password must be at least 8 characters long with uppercase, lowercase, and numbers.', 'error');
   }
 
-  if (window.supabase && supabase) {
-    const { error } = await supabase.auth.updateUser({ password: newPass });
+  if (supabaseClient) {
+    const { error } = await supabaseClient.auth.updateUser({ password: newPass });
     if (error) return showToast(error.message, 'error');
   }
   showToast('Password updated!', 'success');
@@ -307,8 +307,8 @@ async function handleCreatePost(e) {
     created_at: new Date().toISOString()
   };
 
-  if (window.supabase && supabase) {
-    await supabase.from('posts').insert([newPost]);
+  if (supabaseClient) {
+    await supabaseClient.from('posts').insert([newPost]);
   } else {
     const posts = JSON.parse(localStorage.getItem(LOCAL_STORAGE_POSTS_KEY) || '[]');
     posts.unshift(newPost);
