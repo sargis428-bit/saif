@@ -1,5 +1,3 @@
-// app.js - Application Logic & Authentication
-
 let currentUser = null;
 let currentProfile = null;
 let currentAuthMode = 'signin';
@@ -14,11 +12,32 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
 });
 
-function initApp() {
+async function initApp() {
+  if (supabaseClient) {
+    try {
+      // Check active Supabase session (including returning from GitHub OAuth redirect)
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      
+      if (error) {
+        showToast(error.message, 'error');
+      }
+
+      if (session && session.user) {
+        currentUser = session.user;
+        localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
+        await fetchProfile(currentUser.id);
+        return;
+      }
+    } catch (err) {
+      console.error('Session retrieval error:', err);
+    }
+  }
+
+  // Fallback check for stored session
   const savedUser = localStorage.getItem('marblevet_session');
   if (savedUser) {
     currentUser = JSON.parse(savedUser);
-    fetchProfile(currentUser.id);
+    await fetchProfile(currentUser.id);
   } else {
     showScreen('auth');
   }
@@ -176,20 +195,31 @@ async function handleAuthSubmit(e) {
 
     localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
     showToast(currentAuthMode === 'signup' ? 'Account created successfully!' : 'Signed in successfully!', 'success');
-    fetchProfile(currentUser.id);
+    await fetchProfile(currentUser.id);
   } catch (err) {
     showToast(err.message || 'An unexpected error occurred.', 'error');
   }
 }
 
-function handleGitHubAuth() {
+async function handleGitHubAuth() {
   if (supabaseClient) {
-    supabaseClient.auth.signInWithOAuth({ provider: 'github' });
+    const redirectUrl = window.location.origin + window.location.pathname;
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: redirectUrl
+      }
+    });
+
+    if (error) {
+      showToast(error.message, 'error');
+    }
   } else {
+    // Sandbox fallback
     currentUser = { id: 'usr_github_' + Date.now(), email: 'github_user@petcare.com' };
     localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
-    showToast('Signed in with GitHub OAuth!', 'success');
-    fetchProfile(currentUser.id);
+    showToast('Signed in with GitHub!', 'success');
+    await fetchProfile(currentUser.id);
   }
 }
 
@@ -203,7 +233,26 @@ async function fetchProfile(userId) {
     profile = profiles[userId];
   }
 
+  // Extract username/email from GitHub metadata if signing in via GitHub
+  const githubUsername = currentUser?.user_metadata?.user_name || 
+                         currentUser?.user_metadata?.preferred_username || 
+                         (currentUser?.email ? currentUser.email.split('@')[0] : null);
+
+  if (!profile && githubUsername) {
+    profile = { id: userId, username: githubUsername, created_at: new Date().toISOString() };
+    if (supabaseClient) {
+      await supabaseClient.from('profiles').upsert(profile);
+    } else {
+      const profiles = JSON.parse(localStorage.getItem('marblevet_profiles') || '{}');
+      profiles[userId] = profile;
+      localStorage.setItem('marblevet_profiles', JSON.stringify(profiles));
+    }
+  }
+
   if (!profile || !profile.username) {
+    if (githubUsername) {
+      document.getElementById('input-username').value = githubUsername;
+    }
     showScreen('username');
   } else {
     currentProfile = profile;
