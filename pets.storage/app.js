@@ -7,6 +7,19 @@ const LOCAL_STORAGE_USERS_KEY = 'marblevet_users_db';
 const LOCAL_STORAGE_POSTS_KEY = 'marblevet_posts_db';
 const LOCAL_STORAGE_REPLIES_KEY = 'marblevet_replies_db';
 
+// Allowed MIME types and file extensions for upload validation
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'video/mp4', 'video/quicktime',
+  'audio/mpeg', 'audio/mp3', 'audio/m4a', 'audio/wav', 'audio/x-m4a', 'audio/x-wav',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword'
+];
+
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'mov', 'mp3', 'm4a', 'wav', 'pdf', 'docx', 'doc'];
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
   setupEventListeners();
@@ -338,9 +351,21 @@ async function handleCreatePost(e) {
   let file_url = null;
   if (fileInput.files.length > 0) {
     const file = fileInput.files[0];
-    if (file.size > 50 * 1024 * 1024) {
-      return showToast('File size exceeds 50MB limit.', 'error');
+
+    // File size check: 5MB maximum
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return showToast('File size exceeds the 5 MB limit.', 'error');
     }
+
+    // Extension & MIME type check
+    const ext = file.name.split('.').pop().toLowerCase();
+    const isExtensionValid = ALLOWED_EXTENSIONS.includes(ext);
+    const isMimeValid = ALLOWED_MIME_TYPES.includes(file.type) || file.type === '';
+
+    if (!isExtensionValid || !isMimeValid) {
+      return showToast('Invalid file format. Accepted: JPG, PNG, WEBP, GIF, MP4, MOV, MP3, M4A, WAV, PDF, DOCX.', 'error');
+    }
+
     file_url = await readFileAsDataURL(file);
   }
 
@@ -450,7 +475,13 @@ function renderAttachment(url) {
   if (url.startsWith('data:image')) {
     return `<img src="${url}" class="max-h-48 rounded-lg object-contain bg-stone-950 border border-stone-800" />`;
   }
-  return `<a href="${url}" target="_blank" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View Attachment</a>`;
+  if (url.startsWith('data:video')) {
+    return `<video src="${url}" controls class="max-h-48 rounded-lg w-full bg-stone-950 border border-stone-800"></video>`;
+  }
+  if (url.startsWith('data:audio')) {
+    return `<audio src="${url}" controls class="w-full mt-2"></audio>`;
+  }
+  return `<a href="${url}" download="attachment" target="_blank" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View / Download Attachment</a>`;
 }
 
 function showToast(msg, type = 'info') {
