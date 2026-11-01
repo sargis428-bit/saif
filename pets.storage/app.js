@@ -5,7 +5,6 @@ let activeCategory = 'all';
 
 const LOCAL_STORAGE_USERS_KEY = 'marblevet_users_db';
 const LOCAL_STORAGE_POSTS_KEY = 'marblevet_posts_db';
-const LOCAL_STORAGE_REPLIES_KEY = 'marblevet_replies_db';
 
 // Allowed MIME types and file extensions for upload validation
 const ALLOWED_MIME_TYPES = [
@@ -239,7 +238,7 @@ async function handleGitHubAuth() {
 async function fetchProfile(userId) {
   let profile = null;
   if (supabaseClient) {
-    const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+    const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).maybeSingle();
     profile = data;
   } else {
     const profiles = JSON.parse(localStorage.getItem('marblevet_profiles') || '{}');
@@ -272,7 +271,7 @@ async function fetchProfile(userId) {
     document.getElementById('nav-username').innerText = `@${profile.username}`;
     document.getElementById('nav-user-bar').classList.remove('hidden');
     showScreen('app');
-    renderPosts();
+    await renderPosts();
   }
 }
 
@@ -284,7 +283,8 @@ async function handleUsernameSubmit(e) {
   currentProfile = { id: currentUser.id, username, created_at: new Date().toISOString() };
 
   if (supabaseClient) {
-    await supabaseClient.from('profiles').upsert(currentProfile);
+    const { error } = await supabaseClient.from('profiles').upsert(currentProfile);
+    if (error) return showToast(error.message, 'error');
   } else {
     const profiles = JSON.parse(localStorage.getItem('marblevet_profiles') || '{}');
     profiles[currentUser.id] = currentProfile;
@@ -295,7 +295,7 @@ async function handleUsernameSubmit(e) {
   document.getElementById('nav-user-bar').classList.remove('hidden');
   showToast('Username configured!', 'success');
   showScreen('app');
-  renderPosts();
+  await renderPosts();
 }
 
 function handleSignOut() {
@@ -370,7 +370,6 @@ async function handleCreatePost(e) {
   }
 
   const newPost = {
-    id: 'post_' + Date.now(),
     user_id: currentUser.id,
     author_username: currentProfile.username,
     title,
@@ -382,8 +381,12 @@ async function handleCreatePost(e) {
   };
 
   if (supabaseClient) {
-    await supabaseClient.from('posts').insert([newPost]);
+    const { data, error } = await supabaseClient.from('posts').insert([newPost]).select();
+    if (error) {
+      return showToast(error.message, 'error');
+    }
   } else {
+    newPost.id = 'post_' + Date.now();
     const posts = JSON.parse(localStorage.getItem(LOCAL_STORAGE_POSTS_KEY) || '[]');
     posts.unshift(newPost);
     localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(posts));
@@ -392,7 +395,7 @@ async function handleCreatePost(e) {
   document.getElementById('modal-post').classList.add('hidden');
   document.getElementById('post-form').reset();
   showToast('Entry created!', 'success');
-  renderPosts();
+  await renderPosts();
 }
 
 function readFileAsDataURL(file) {
@@ -403,17 +406,29 @@ function readFileAsDataURL(file) {
   });
 }
 
-function getStoredPosts() {
+async function getPosts() {
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching posts from Supabase:', error);
+      return [];
+    }
+    return data || [];
+  }
   return JSON.parse(localStorage.getItem(LOCAL_STORAGE_POSTS_KEY) || '[]');
 }
 
-function renderPosts() {
-  const posts = getStoredPosts();
+async function renderPosts() {
+  const posts = await getPosts();
   const logGrid = document.getElementById('log-grid');
   const communityFeed = document.getElementById('community-feed');
   const searchQuery = document.getElementById('search-input').value.toLowerCase();
 
-  const privatePosts = posts.filter(p => p.visibility === 'private' && p.user_id === currentUser.id);
+  const privatePosts = posts.filter(p => p.visibility === 'private' && p.user_id === currentUser?.id);
   if (privatePosts.length === 0) {
     logGrid.innerHTML = `
       <div class="col-span-full clean-card p-8 text-center text-stone-400">
