@@ -2,6 +2,7 @@ let currentUser = null;
 let currentProfile = null;
 let currentAuthMode = 'signin';
 let activeCategory = 'all';
+let loadedPosts = [];
 
 const LOCAL_STORAGE_USERS_KEY = 'marblevet_users_db';
 const LOCAL_STORAGE_POSTS_KEY = 'marblevet_posts_db';
@@ -96,6 +97,8 @@ function setupEventListeners() {
   document.getElementById('btn-create-post').addEventListener('click', () => document.getElementById('modal-post').classList.remove('hidden'));
   document.getElementById('btn-close-modal').addEventListener('click', () => document.getElementById('modal-post').classList.add('hidden'));
   document.getElementById('btn-cancel-post').addEventListener('click', () => document.getElementById('modal-post').classList.add('hidden'));
+
+  document.getElementById('btn-close-view-modal').addEventListener('click', () => document.getElementById('modal-view-post').classList.add('hidden'));
 
   document.getElementById('post-form').addEventListener('submit', handleCreatePost);
   document.getElementById('change-pass-form').addEventListener('submit', handleChangePassword);
@@ -451,12 +454,12 @@ async function getPosts() {
 }
 
 async function renderPosts() {
-  const posts = await getPosts();
+  loadedPosts = await getPosts();
   const logGrid = document.getElementById('log-grid');
   const communityFeed = document.getElementById('community-feed');
   const searchQuery = document.getElementById('search-input').value.toLowerCase();
 
-  const privatePosts = posts.filter(p => p.visibility === 'private' && p.user_id === currentUser?.id);
+  const privatePosts = loadedPosts.filter(p => p.visibility === 'private' && p.user_id === currentUser?.id);
   if (privatePosts.length === 0) {
     logGrid.innerHTML = `
       <div class="col-span-full clean-card p-8 text-center text-stone-400">
@@ -465,7 +468,7 @@ async function renderPosts() {
       </div>`;
   } else {
     logGrid.innerHTML = privatePosts.map(p => `
-      <div class="clean-card p-5 flex flex-col justify-between">
+      <div onclick="openPostModal('${p.id}')" class="clean-card p-5 flex flex-col justify-between cursor-pointer hover:border-amber-500 transition-all">
         <div>
           <div class="flex justify-between items-start mb-2">
             <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
@@ -474,14 +477,14 @@ async function renderPosts() {
             <span class="text-[10px] text-stone-500">${new Date(p.created_at).toLocaleDateString()}</span>
           </div>
           <h3 class="font-bold text-amber-100 text-base mb-2">${escapeHtml(p.title)}</h3>
-          <p class="text-xs text-stone-300 leading-relaxed mb-4">${escapeHtml(p.content)}</p>
+          <p class="text-xs text-stone-300 leading-relaxed mb-4 line-clamp-3">${escapeHtml(p.content)}</p>
         </div>
         ${p.file_url ? `<div class="pt-2 border-t border-stone-800">${renderAttachment(p.file_url)}</div>` : ''}
       </div>
     `).join('');
   }
 
-  let publicPosts = posts.filter(p => p.visibility !== 'private');
+  let publicPosts = loadedPosts.filter(p => p.visibility !== 'private');
   if (activeCategory !== 'all') {
     publicPosts = publicPosts.filter(p => p.category === activeCategory);
   }
@@ -497,7 +500,7 @@ async function renderPosts() {
       </div>`;
   } else {
     communityFeed.innerHTML = publicPosts.map(p => `
-      <div class="clean-card p-6 space-y-3">
+      <div onclick="openPostModal('${p.id}')" class="clean-card p-6 space-y-3 cursor-pointer hover:border-amber-500 transition-all">
         <div class="flex justify-between items-center text-xs">
           <div class="flex items-center gap-2">
             <span class="font-bold text-amber-400">@${escapeHtml(p.author_username || 'anonymous')}</span>
@@ -507,25 +510,63 @@ async function renderPosts() {
           <span class="text-stone-500 text-[11px]">${new Date(p.created_at).toLocaleString()}</span>
         </div>
         <h3 class="text-lg font-bold text-amber-100">${escapeHtml(p.title)}</h3>
-        <p class="text-sm text-stone-300 leading-relaxed">${escapeHtml(p.content)}</p>
+        <p class="text-sm text-stone-300 leading-relaxed line-clamp-3">${escapeHtml(p.content)}</p>
         ${p.file_url ? `<div class="pt-2">${renderAttachment(p.file_url)}</div>` : ''}
       </div>
     `).join('');
   }
 }
 
+function openPostModal(postId) {
+  const post = loadedPosts.find(p => String(p.id) === String(postId));
+  if (!post) return;
+
+  document.getElementById('view-post-title').innerText = post.title;
+  document.getElementById('view-post-author').innerText = `@${post.author_username || 'anonymous'}`;
+  document.getElementById('view-post-category').innerText = post.category;
+  document.getElementById('view-post-date').innerText = new Date(post.created_at).toLocaleString();
+  document.getElementById('view-post-content').innerText = post.content;
+
+  const mediaContainer = document.getElementById('view-post-media-container');
+  const mediaContent = document.getElementById('view-post-media-content');
+
+  if (post.file_url) {
+    mediaContent.innerHTML = renderCenteredMedia(post.file_url);
+    mediaContainer.classList.remove('hidden');
+  } else {
+    mediaContainer.classList.add('hidden');
+    mediaContent.innerHTML = '';
+  }
+
+  document.getElementById('modal-view-post').classList.remove('hidden');
+}
+
+function renderCenteredMedia(url) {
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif') || lowerUrl.startsWith('data:image')) {
+    return `<img src="${url}" class="max-h-[60vh] max-w-full rounded-lg object-contain shadow-2xl border border-stone-800" />`;
+  }
+  if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.startsWith('data:video')) {
+    return `<video src="${url}" controls class="max-h-[60vh] max-w-full rounded-lg shadow-2xl border border-stone-800"></video>`;
+  }
+  if (lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.m4a') || lowerUrl.startsWith('data:audio')) {
+    return `<audio src="${url}" controls class="w-full max-w-md my-4"></audio>`;
+  }
+  return `<a href="${url}" download target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-5 py-3 bg-amber-600/20 text-amber-300 hover:bg-amber-600/30 border border-amber-500/40 rounded-xl inline-flex items-center gap-2.5 text-sm font-semibold transition-all"><i class="fa-solid fa-file-arrow-down text-base"></i> View / Download Full Attachment</a>`;
+}
+
 function renderAttachment(url) {
   const lowerUrl = url.toLowerCase();
   if (lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif') || lowerUrl.startsWith('data:image')) {
-    return `<img src="${url}" class="max-h-48 rounded-lg object-contain bg-stone-950 border border-stone-800" />`;
+    return `<img src="${url}" class="max-h-48 rounded-lg object-contain bg-stone-950 border border-stone-800 w-full" />`;
   }
   if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.startsWith('data:video')) {
-    return `<video src="${url}" controls class="max-h-48 rounded-lg w-full bg-stone-950 border border-stone-800"></video>`;
+    return `<video src="${url}" controls onclick="event.stopPropagation()" class="max-h-48 rounded-lg w-full bg-stone-950 border border-stone-800"></video>`;
   }
   if (lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.m4a') || lowerUrl.startsWith('data:audio')) {
-    return `<audio src="${url}" controls class="w-full mt-2"></audio>`;
+    return `<audio src="${url}" controls onclick="event.stopPropagation()" class="w-full mt-2"></audio>`;
   }
-  return `<a href="${url}" download target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View / Download Attachment</a>`;
+  return `<a href="${url}" download target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View / Download Attachment</a>`;
 }
 
 function showToast(msg, type = 'info') {
