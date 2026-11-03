@@ -541,29 +541,45 @@ function openPostModal(postId) {
   document.getElementById('modal-view-post').classList.remove('hidden');
 }
 
-function renderCenteredMedia(url) {
-  const lowerUrl = url.toLowerCase();
-  if (lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif') || lowerUrl.startsWith('data:image')) {
-    return `<img src="${url}" class="max-h-[60vh] max-w-full rounded-lg object-contain shadow-2xl border border-stone-800" />`;
+function getFileType(url) {
+  if (!url) return 'other';
+  const cleanUrl = url.split('?')[0].toLowerCase();
+  
+  if (cleanUrl.startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(cleanUrl)) {
+    return 'image';
   }
-  if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.startsWith('data:video')) {
+  if (cleanUrl.startsWith('data:video') || /\.(mp4|mov|webm|ogg)$/i.test(cleanUrl)) {
+    return 'video';
+  }
+  if (cleanUrl.startsWith('data:audio') || /\.(mp3|wav|m4a|aac|ogg)$/i.test(cleanUrl)) {
+    return 'audio';
+  }
+  return 'other';
+}
+
+function renderCenteredMedia(url) {
+  const type = getFileType(url);
+  if (type === 'image') {
+    return `<img src="${url}" class="max-h-[60vh] max-w-full rounded-lg object-contain shadow-2xl border border-stone-800" alt="Post attachment" />`;
+  }
+  if (type === 'video') {
     return `<video src="${url}" controls class="max-h-[60vh] max-w-full rounded-lg shadow-2xl border border-stone-800"></video>`;
   }
-  if (lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.m4a') || lowerUrl.startsWith('data:audio')) {
+  if (type === 'audio') {
     return `<audio src="${url}" controls class="w-full max-w-md my-4"></audio>`;
   }
   return `<a href="${url}" download target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-5 py-3 bg-amber-600/20 text-amber-300 hover:bg-amber-600/30 border border-amber-500/40 rounded-xl inline-flex items-center gap-2.5 text-sm font-semibold transition-all"><i class="fa-solid fa-file-arrow-down text-base"></i> View / Download Full Attachment</a>`;
 }
 
 function renderAttachment(url) {
-  const lowerUrl = url.toLowerCase();
-  if (lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif') || lowerUrl.startsWith('data:image')) {
-    return `<img src="${url}" class="max-h-48 rounded-lg object-contain bg-stone-950 border border-stone-800 w-full" />`;
+  const type = getFileType(url);
+  if (type === 'image') {
+    return `<img src="${url}" class="max-h-48 rounded-lg object-contain bg-stone-950 border border-stone-800 w-full" alt="Post attachment" />`;
   }
-  if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.startsWith('data:video')) {
+  if (type === 'video') {
     return `<video src="${url}" controls onclick="event.stopPropagation()" class="max-h-48 rounded-lg w-full bg-stone-950 border border-stone-800"></video>`;
   }
-  if (lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.m4a') || lowerUrl.startsWith('data:audio')) {
+  if (type === 'audio') {
     return `<audio src="${url}" controls onclick="event.stopPropagation()" class="w-full mt-2"></audio>`;
   }
   return `<a href="${url}" download target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View / Download Attachment</a>`;
