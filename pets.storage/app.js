@@ -5,6 +5,7 @@ let activeCategory = 'all';
 
 const LOCAL_STORAGE_USERS_KEY = 'marblevet_users_db';
 const LOCAL_STORAGE_POSTS_KEY = 'marblevet_posts_db';
+const STORAGE_BUCKET_NAME = 'pet-attachments';
 
 // Allowed MIME types and file extensions for upload validation
 const ALLOWED_MIME_TYPES = [
@@ -13,11 +14,12 @@ const ALLOWED_MIME_TYPES = [
   'audio/mpeg', 'audio/mp3', 'audio/m4a', 'audio/wav', 'audio/x-m4a', 'audio/x-wav',
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/msword'
+  'application/msword',
+  'application/zip'
 ];
 
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'mov', 'mp3', 'm4a', 'wav', 'pdf', 'docx', 'doc'];
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'mov', 'mp3', 'm4a', 'wav', 'pdf', 'docx', 'doc', 'zip'];
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB (Matches storage bucket limit)
 
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
@@ -27,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initApp() {
   if (supabaseClient) {
     try {
-      // Check active Supabase session (including returning from GitHub OAuth redirect)
       const { data: { session }, error } = await supabaseClient.auth.getSession();
       
       if (error) {
@@ -189,7 +190,6 @@ async function handleAuthSubmit(e) {
         currentUser = data.user;
       }
     } else {
-      // LocalStorage Fallback
       const users = JSON.parse(localStorage.getItem(LOCAL_STORAGE_USERS_KEY) || '[]');
       if (currentAuthMode === 'signup') {
         if (users.find(u => u.email === email)) {
@@ -227,7 +227,6 @@ async function handleGitHubAuth() {
       showToast(error.message, 'error');
     }
   } else {
-    // Sandbox fallback
     currentUser = { id: 'usr_github_' + Date.now(), email: 'github_user@petcare.com' };
     localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
     showToast('Signed in with GitHub!', 'success');
@@ -245,7 +244,6 @@ async function fetchProfile(userId) {
     profile = profiles[userId];
   }
 
-  // Extract username/email from GitHub metadata if signing in via GitHub
   const githubUsername = currentUser?.user_metadata?.user_name || 
                          currentUser?.user_metadata?.preferred_username || 
                          (currentUser?.email ? currentUser.email.split('@')[0] : null);
@@ -340,6 +338,29 @@ function switchAppTab(tab) {
   }
 }
 
+async function uploadFileToStorage(file) {
+  if (!supabaseClient) {
+    return await readFileAsDataURL(file);
+  }
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  const fileName = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+
+  const { data, error } = await supabaseClient.storage
+    .from(STORAGE_BUCKET_NAME)
+    .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+  if (error) {
+    throw new Error(`Upload failed: ${error.message}`);
+  }
+
+  const { data: publicUrlData } = supabaseClient.storage
+    .from(STORAGE_BUCKET_NAME)
+    .getPublicUrl(data.path);
+
+  return publicUrlData.publicUrl;
+}
+
 async function handleCreatePost(e) {
   e.preventDefault();
   const title = document.getElementById('post-title').value.trim();
@@ -348,30 +369,37 @@ async function handleCreatePost(e) {
   const content = document.getElementById('post-content').value.trim();
   const fileInput = document.getElementById('post-file');
 
+  if (!currentProfile || !currentProfile.username) {
+    await fetchProfile(currentUser.id);
+  }
+
   let file_url = null;
   if (fileInput.files.length > 0) {
     const file = fileInput.files[0];
 
-    // File size check: 5MB maximum
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      return showToast('File size exceeds the 5 MB limit.', 'error');
+      return showToast('File size exceeds the limit.', 'error');
     }
 
-    // Extension & MIME type check
     const ext = file.name.split('.').pop().toLowerCase();
     const isExtensionValid = ALLOWED_EXTENSIONS.includes(ext);
     const isMimeValid = ALLOWED_MIME_TYPES.includes(file.type) || file.type === '';
 
     if (!isExtensionValid || !isMimeValid) {
-      return showToast('Invalid file format. Accepted: JPG, PNG, WEBP, GIF, MP4, MOV, MP3, M4A, WAV, PDF, DOCX.', 'error');
+      return showToast('Invalid file format. Accepted: Images, Videos, Audio, PDF, DOCX, ZIP.', 'error');
     }
 
-    file_url = await readFileAsDataURL(file);
+    try {
+      showToast('Uploading attachment...', 'info');
+      file_url = await uploadFileToStorage(file);
+    } catch (err) {
+      return showToast(err.message, 'error');
+    }
   }
 
   const newPost = {
     user_id: currentUser.id,
-    author_username: currentProfile.username,
+    author_username: currentProfile?.username || currentUser?.email?.split('@')[0] || 'anonymous',
     title,
     content,
     category,
@@ -487,16 +515,17 @@ async function renderPosts() {
 }
 
 function renderAttachment(url) {
-  if (url.startsWith('data:image')) {
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif') || lowerUrl.startsWith('data:image')) {
     return `<img src="${url}" class="max-h-48 rounded-lg object-contain bg-stone-950 border border-stone-800" />`;
   }
-  if (url.startsWith('data:video')) {
+  if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.startsWith('data:video')) {
     return `<video src="${url}" controls class="max-h-48 rounded-lg w-full bg-stone-950 border border-stone-800"></video>`;
   }
-  if (url.startsWith('data:audio')) {
+  if (lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.m4a') || lowerUrl.startsWith('data:audio')) {
     return `<audio src="${url}" controls class="w-full mt-2"></audio>`;
   }
-  return `<a href="${url}" download="attachment" target="_blank" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View / Download Attachment</a>`;
+  return `<a href="${url}" download target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View / Download Attachment</a>`;
 }
 
 function showToast(msg, type = 'info') {
