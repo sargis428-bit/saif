@@ -103,7 +103,12 @@ function setupEventListeners() {
   document.getElementById('btn-close-view-modal').addEventListener('click', () => document.getElementById('modal-view-post').classList.add('hidden'));
 
   document.getElementById('post-form').addEventListener('submit', handleCreatePost);
-  document.getElementById('comment-form').addEventListener('submit', handleCreateComment);
+  
+  const commentForm = document.getElementById('comment-form');
+  if (commentForm) {
+    commentForm.addEventListener('submit', handleCreateComment);
+  }
+
   document.getElementById('change-pass-form').addEventListener('submit', handleChangePassword);
 
   document.querySelectorAll('.cat-filter').forEach(btn => {
@@ -618,6 +623,10 @@ async function handleCreateComment(e) {
 
   if (!content || !activeModalPostId) return;
 
+  if (!currentUser) {
+    return showToast('You must be logged in to leave a reply.', 'error');
+  }
+
   if (!currentProfile || !currentProfile.username) {
     await fetchProfile(currentUser.id);
   }
@@ -630,48 +639,24 @@ async function handleCreateComment(e) {
     created_at: new Date().toISOString()
   };
 
-  if (supabaseClient) {
-    const { error } = await supabaseClient.from('comments').insert([newComment]);
-    if (error) {
-      return showToast(error.message, 'error');
+  try {
+    if (supabaseClient) {
+      const { error } = await supabaseClient.from('comments').insert([newComment]);
+      if (error) {
+        return showToast(error.message, 'error');
+      }
+    } else {
+      newComment.id = 'comment_' + Date.now();
+      const comments = JSON.parse(localStorage.getItem(LOCAL_STORAGE_COMMENTS_KEY) || '[]');
+      comments.push(newComment);
+      localStorage.setItem(LOCAL_STORAGE_COMMENTS_KEY, JSON.stringify(comments));
     }
-  } else {
-    newComment.id = 'comment_' + Date.now();
-    const comments = JSON.parse(localStorage.getItem(LOCAL_STORAGE_COMMENTS_KEY) || '[]');
-    comments.push(newComment);
-    localStorage.setItem(LOCAL_STORAGE_COMMENTS_KEY, JSON.stringify(comments));
-  }
 
-  commentInput.value = '';
-  showToast('Reply submitted!', 'success');
-  await renderComments(activeModalPostId);
-}
-
-function getFileType(url) {
-  if (!url) return 'other';
-  const cleanUrl = url.split('?')[0].toLowerCase();
-  
-  if (cleanUrl.startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(cleanUrl)) {
-    return 'image';
-  }
-  if (cleanUrl.startsWith('data:video') || /\.(mp4|mov|webm|ogg)$/i.test(cleanUrl)) {
-    return 'video';
-  }
-  if (cleanUrl.startsWith('data:audio') || /\.(mp3|wav|m4a|aac|ogg)$/i.test(cleanUrl)) {
-    return 'audio';
-  }
-  return 'other';
-}
-
-function handleImageError(imgElement) {
-  imgElement.onerror = null;
-  const parent = imgElement.parentElement;
-  if (parent) {
-    parent.innerHTML = `
-      <div class="w-full h-full min-h-[140px] flex flex-col items-center justify-center p-4 text-stone-500 bg-stone-900/60 rounded-lg border border-stone-800 gap-2">
-        <i class="fa-regular fa-image text-3xl text-amber-500/50"></i>
-        <span class="text-xs font-medium text-stone-400">Image Preview Unavailable</span>
-      </div>`;
+    commentInput.value = '';
+    showToast('Reply submitted!', 'success');
+    await renderComments(activeModalPostId);
+  } catch (err) {
+    showToast('Failed to post reply.', 'error');
   }
 }
 
