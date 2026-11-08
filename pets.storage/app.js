@@ -468,18 +468,23 @@ async function renderPosts() {
       </div>`;
   } else {
     logGrid.innerHTML = privatePosts.map(p => `
-      <div onclick="openPostModal('${p.id}')" class="clean-card p-5 flex flex-col justify-between cursor-pointer hover:border-amber-500 transition-all">
+      <div onclick="openPostModal('${p.id}')" class="clean-card p-4 flex flex-col justify-between cursor-pointer hover:border-amber-500 transition-all group">
         <div>
-          <div class="flex justify-between items-start mb-2">
-            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              ${escapeHtml(p.category)}
-            </span>
+          <div class="flex justify-between items-center text-xs mb-3">
+            <span class="font-bold text-amber-400">@${escapeHtml(p.author_username || 'anonymous')}</span>
             <span class="text-[10px] text-stone-500">${new Date(p.created_at).toLocaleDateString()}</span>
           </div>
-          <h3 class="font-bold text-amber-100 text-base mb-2">${escapeHtml(p.title)}</h3>
-          <p class="text-xs text-stone-300 leading-relaxed mb-4 line-clamp-3">${escapeHtml(p.content)}</p>
+
+          <!-- Small screen file/image display inside the upload box -->
+          ${renderThumbnailBox(p.file_url)}
+
+          <h3 class="font-bold text-amber-100 text-base mb-1.5 mt-3 group-hover:text-amber-400 transition-colors">${escapeHtml(p.title)}</h3>
+          
+          <div class="inline-flex items-center gap-1.5 text-xs text-amber-500/80 mt-1">
+            <i class="fa-solid fa-up-right-and-down-left-from-center text-[10px]"></i>
+            <span class="text-[11px] font-medium">Click box to reveal details</span>
+          </div>
         </div>
-        ${p.file_url ? `<div class="pt-2 border-t border-stone-800">${renderAttachment(p.file_url)}</div>` : ''}
       </div>
     `).join('');
   }
@@ -494,24 +499,33 @@ async function renderPosts() {
 
   if (publicPosts.length === 0) {
     communityFeed.innerHTML = `
-      <div class="clean-card p-8 text-center text-stone-400">
+      <div class="col-span-full clean-card p-8 text-center text-stone-400">
         <i class="fa-solid fa-comments text-3xl text-amber-500/50 mb-2"></i>
         <p class="text-sm">No community questions found.</p>
       </div>`;
   } else {
     communityFeed.innerHTML = publicPosts.map(p => `
-      <div onclick="openPostModal('${p.id}')" class="clean-card p-6 space-y-3 cursor-pointer hover:border-amber-500 transition-all">
-        <div class="flex justify-between items-center text-xs">
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-amber-400">@${escapeHtml(p.author_username || 'anonymous')}</span>
-            <span class="text-stone-500">•</span>
-            <span class="px-2 py-0.5 rounded bg-stone-900 border border-stone-800 text-[10px] uppercase text-stone-400 font-semibold">${escapeHtml(p.category)}</span>
+      <div onclick="openPostModal('${p.id}')" class="clean-card p-4 flex flex-col justify-between cursor-pointer hover:border-amber-500 transition-all group">
+        <div>
+          <div class="flex justify-between items-center text-xs mb-3">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-amber-400">@${escapeHtml(p.author_username || 'anonymous')}</span>
+              <span class="text-stone-600">•</span>
+              <span class="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] uppercase text-amber-400 font-semibold">${escapeHtml(p.category)}</span>
+            </div>
+            <span class="text-[10px] text-stone-500">${new Date(p.created_at).toLocaleDateString()}</span>
           </div>
-          <span class="text-stone-500 text-[11px]">${new Date(p.created_at).toLocaleString()}</span>
+
+          <!-- Small screen file/image display inside the upload box -->
+          ${renderThumbnailBox(p.file_url)}
+
+          <h3 class="font-bold text-amber-100 text-base mb-1.5 mt-3 group-hover:text-amber-400 transition-colors">${escapeHtml(p.title)}</h3>
+          
+          <div class="inline-flex items-center gap-1.5 text-xs text-amber-500/80 mt-1">
+            <i class="fa-solid fa-up-right-and-down-left-from-center text-[10px]"></i>
+            <span class="text-[11px] font-medium">Click box to reveal details</span>
+          </div>
         </div>
-        <h3 class="text-lg font-bold text-amber-100">${escapeHtml(p.title)}</h3>
-        <p class="text-sm text-stone-300 leading-relaxed line-clamp-3">${escapeHtml(p.content)}</p>
-        ${p.file_url ? `<div class="pt-2">${renderAttachment(p.file_url)}</div>` : ''}
       </div>
     `).join('');
   }
@@ -557,6 +571,44 @@ function getFileType(url) {
   return 'other';
 }
 
+function renderThumbnailBox(url) {
+  if (!url) {
+    return `
+      <div class="w-full h-36 rounded-lg bg-stone-900/60 border border-stone-800 flex flex-col items-center justify-center text-stone-600 gap-1.5">
+        <i class="fa-regular fa-file text-2xl"></i>
+        <span class="text-[11px]">No Attachment</span>
+      </div>`;
+  }
+
+  const type = getFileType(url);
+
+  if (type === 'image') {
+    return `
+      <div class="w-full h-36 rounded-lg bg-stone-950 overflow-hidden border border-stone-800 relative">
+        <img src="${url}" class="w-full h-full object-cover" alt="Upload thumbnail" />
+      </div>`;
+  }
+  if (type === 'video') {
+    return `
+      <div class="w-full h-36 rounded-lg bg-stone-950 flex flex-col items-center justify-center border border-stone-800 relative gap-2 text-amber-400">
+        <i class="fa-solid fa-circle-play text-3xl"></i>
+        <span class="text-xs text-stone-400 font-medium">Video Attached</span>
+      </div>`;
+  }
+  if (type === 'audio') {
+    return `
+      <div class="w-full h-36 rounded-lg bg-stone-950 flex flex-col items-center justify-center border border-stone-800 text-amber-400 gap-2">
+        <i class="fa-solid fa-file-audio text-3xl"></i>
+        <span class="text-xs text-stone-400 font-medium">Audio Recording</span>
+      </div>`;
+  }
+  return `
+    <div class="w-full h-36 rounded-lg bg-stone-950 flex flex-col items-center justify-center border border-stone-800 text-amber-400 gap-2">
+      <i class="fa-solid fa-file-lines text-3xl"></i>
+      <span class="text-xs text-stone-400 font-medium">Document Attached</span>
+    </div>`;
+}
+
 function renderCenteredMedia(url) {
   const type = getFileType(url);
   if (type === 'image') {
@@ -569,20 +621,6 @@ function renderCenteredMedia(url) {
     return `<audio src="${url}" controls class="w-full max-w-md my-4"></audio>`;
   }
   return `<a href="${url}" download target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-5 py-3 bg-amber-600/20 text-amber-300 hover:bg-amber-600/30 border border-amber-500/40 rounded-xl inline-flex items-center gap-2.5 text-sm font-semibold transition-all"><i class="fa-solid fa-file-arrow-down text-base"></i> View / Download Full Attachment</a>`;
-}
-
-function renderAttachment(url) {
-  const type = getFileType(url);
-  if (type === 'image') {
-    return `<img src="${url}" class="max-h-48 rounded-lg object-contain bg-stone-950 border border-stone-800 w-full" alt="Post attachment" />`;
-  }
-  if (type === 'video') {
-    return `<video src="${url}" controls onclick="event.stopPropagation()" class="max-h-48 rounded-lg w-full bg-stone-950 border border-stone-800"></video>`;
-  }
-  if (type === 'audio') {
-    return `<audio src="${url}" controls onclick="event.stopPropagation()" class="w-full mt-2"></audio>`;
-  }
-  return `<a href="${url}" download target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="inline-flex items-center gap-2 text-xs text-amber-400 hover:underline"><i class="fa-solid fa-paperclip"></i> View / Download Attachment</a>`;
 }
 
 function showToast(msg, type = 'info') {

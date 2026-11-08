@@ -48,6 +48,7 @@
 
     .clean-card:hover {
       border-color: #d97706;
+      transform: translateY(-2px);
     }
 
     .tab-btn.active {
@@ -193,7 +194,7 @@
               <i class="fa-solid fa-lock text-amber-500 text-base"></i>
               Private Health Logs & Records
             </h2>
-            <p class="text-stone-400 text-xs">Medical records, adoption papers, and confidential notes. Visible strictly to you.</p>
+            <p class="text-stone-400 text-xs">Medical records, adoption papers, and confidential notes. Visible strictly to you. Click on any box to reveal description details.</p>
           </div>
         </div>
 
@@ -201,7 +202,7 @@
       </div>
 
       <!-- COMMUNITY HUB TAB -->
-      <div id="view-community" class="hidden space-y-6">
+      <div id="view-community" class="space-y-6">
         <div class="flex flex-col md:flex-row gap-4 justify-between items-center bg-stone-950/60 p-4 rounded-xl border border-stone-800/80">
           <div class="flex flex-wrap gap-2 text-xs font-medium">
             <button class="cat-filter active px-3 py-1.5 rounded-lg bg-amber-600 text-stone-950 font-bold" data-category="all">All Groups</button>
@@ -217,7 +218,7 @@
           </div>
         </div>
 
-        <div id="community-feed" class="space-y-4"></div>
+        <div id="community-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </div>
     </section>
 
@@ -297,7 +298,7 @@
       </div>
     </div>
 
-    <!-- VIEW ENTRY DETAILED MODAL -->
+    <!-- VIEW ENTRY DETAILED MODAL (POP-UP) -->
     <div id="modal-view-post" class="hidden fixed inset-0 z-50 bg-stone-950/85 backdrop-blur-md flex items-center justify-center p-4">
       <div class="clean-card max-w-2xl w-full p-6 space-y-5 relative max-h-[90vh] overflow-y-auto">
         
