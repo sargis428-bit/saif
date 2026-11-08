@@ -571,6 +571,18 @@ function getFileType(url) {
   return 'other';
 }
 
+function handleImageError(imgElement) {
+  imgElement.onerror = null;
+  const parent = imgElement.parentElement;
+  if (parent) {
+    parent.innerHTML = `
+      <div class="w-full h-full min-h-[140px] flex flex-col items-center justify-center p-4 text-stone-500 bg-stone-900/60 rounded-lg border border-stone-800 gap-2">
+        <i class="fa-regular fa-image text-3xl text-amber-500/50"></i>
+        <span class="text-xs font-medium text-stone-400">Image Preview Unavailable</span>
+      </div>`;
+  }
+}
+
 function renderThumbnailBox(url) {
   if (!url) {
     return `
@@ -585,7 +597,7 @@ function renderThumbnailBox(url) {
   if (type === 'image') {
     return `
       <div class="w-full h-36 rounded-lg bg-stone-950 overflow-hidden border border-stone-800 relative">
-        <img src="${url}" class="w-full h-full object-cover" alt="Upload thumbnail" />
+        <img src="${url}" onerror="handleImageError(this)" class="w-full h-full object-cover" alt="Upload thumbnail" />
       </div>`;
   }
   if (type === 'video') {
@@ -612,7 +624,7 @@ function renderThumbnailBox(url) {
 function renderCenteredMedia(url) {
   const type = getFileType(url);
   if (type === 'image') {
-    return `<img src="${url}" class="max-h-[60vh] max-w-full rounded-lg object-contain shadow-2xl border border-stone-800" alt="Post attachment" />`;
+    return `<img src="${url}" onerror="handleImageError(this)" class="max-h-[60vh] max-w-full rounded-lg object-contain shadow-2xl border border-stone-800" alt="Post attachment" />`;
   }
   if (type === 'video') {
     return `<video src="${url}" controls class="max-h-[60vh] max-w-full rounded-lg shadow-2xl border border-stone-800"></video>`;
