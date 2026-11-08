@@ -632,7 +632,7 @@ async function handleCreateComment(e) {
   }
 
   const newComment = {
-    post_id: activeModalPostId,
+    post_id: String(activeModalPostId),
     user_id: currentUser.id,
     author_username: currentProfile?.username || currentUser?.email?.split('@')[0] || 'anonymous',
     content,
@@ -643,7 +643,8 @@ async function handleCreateComment(e) {
     if (supabaseClient) {
       const { error } = await supabaseClient.from('comments').insert([newComment]);
       if (error) {
-        return showToast(error.message, 'error');
+        console.error('Supabase comment insert error:', error);
+        return showToast(`Error: ${error.message}`, 'error');
       }
     } else {
       newComment.id = 'comment_' + Date.now();
@@ -656,7 +657,8 @@ async function handleCreateComment(e) {
     showToast('Reply submitted!', 'success');
     await renderComments(activeModalPostId);
   } catch (err) {
-    showToast('Failed to post reply.', 'error');
+    console.error('Catch handleCreateComment error:', err);
+    showToast(err.message || 'Failed to post reply.', 'error');
   }
 }
 
