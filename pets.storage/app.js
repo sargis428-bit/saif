@@ -3,9 +3,11 @@ let currentProfile = null;
 let currentAuthMode = 'signin';
 let activeCategory = 'all';
 let loadedPosts = [];
+let activeModalPostId = null;
 
 const LOCAL_STORAGE_USERS_KEY = 'marblevet_users_db';
 const LOCAL_STORAGE_POSTS_KEY = 'marblevet_posts_db';
+const LOCAL_STORAGE_COMMENTS_KEY = 'marblevet_comments_db';
 const STORAGE_BUCKET_NAME = 'pet-attachments';
 
 // Allowed MIME types and file extensions for upload validation
@@ -101,6 +103,7 @@ function setupEventListeners() {
   document.getElementById('btn-close-view-modal').addEventListener('click', () => document.getElementById('modal-view-post').classList.add('hidden'));
 
   document.getElementById('post-form').addEventListener('submit', handleCreatePost);
+  document.getElementById('comment-form').addEventListener('submit', handleCreateComment);
   document.getElementById('change-pass-form').addEventListener('submit', handleChangePassword);
 
   document.querySelectorAll('.cat-filter').forEach(btn => {
@@ -531,10 +534,11 @@ async function renderPosts() {
   }
 }
 
-function openPostModal(postId) {
+async function openPostModal(postId) {
   const post = loadedPosts.find(p => String(p.id) === String(postId));
   if (!post) return;
 
+  activeModalPostId = postId;
   document.getElementById('view-post-title').innerText = post.title;
   document.getElementById('view-post-author').innerText = `@${post.author_username || 'anonymous'}`;
   document.getElementById('view-post-category').innerText = post.category;
@@ -552,7 +556,95 @@ function openPostModal(postId) {
     mediaContent.innerHTML = '';
   }
 
+  // Show/Hide Comment Section depending on post visibility
+  const commentsSection = document.getElementById('view-post-comments-section');
+  if (post.visibility === 'private') {
+    commentsSection.classList.add('hidden');
+  } else {
+    commentsSection.classList.remove('hidden');
+    await renderComments(postId);
+  }
+
   document.getElementById('modal-view-post').classList.remove('hidden');
+}
+
+async function getComments(postId) {
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from('comments')
+      .select('*')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching comments:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  const allComments = JSON.parse(localStorage.getItem(LOCAL_STORAGE_COMMENTS_KEY) || '[]');
+  return allComments.filter(c => String(c.post_id) === String(postId));
+}
+
+async function renderComments(postId) {
+  const commentsList = document.getElementById('comments-list');
+  const commentsCount = document.getElementById('comments-count');
+  commentsList.innerHTML = '<p class="text-xs text-stone-500 italic">Loading replies...</p>';
+
+  const comments = await getComments(postId);
+  commentsCount.innerText = comments.length;
+
+  if (comments.length === 0) {
+    commentsList.innerHTML = '<p class="text-xs text-stone-500 italic">No replies yet. Be the first to share advice!</p>';
+    return;
+  }
+
+  commentsList.innerHTML = comments.map(c => `
+    <div class="bg-stone-900/70 border border-stone-800 rounded-lg p-3 space-y-1">
+      <div class="flex justify-between items-center text-[11px]">
+        <span class="font-bold text-amber-400">@${escapeHtml(c.author_username || 'anonymous')}</span>
+        <span class="text-stone-500 text-[10px]">${new Date(c.created_at).toLocaleString()}</span>
+      </div>
+      <p class="text-xs text-stone-200 leading-normal whitespace-pre-wrap">${escapeHtml(c.content)}</p>
+    </div>
+  `).join('');
+}
+
+async function handleCreateComment(e) {
+  e.preventDefault();
+  const commentInput = document.getElementById('comment-input');
+  const content = commentInput.value.trim();
+
+  if (!content || !activeModalPostId) return;
+
+  if (!currentProfile || !currentProfile.username) {
+    await fetchProfile(currentUser.id);
+  }
+
+  const newComment = {
+    post_id: activeModalPostId,
+    user_id: currentUser.id,
+    author_username: currentProfile?.username || currentUser?.email?.split('@')[0] || 'anonymous',
+    content,
+    created_at: new Date().toISOString()
+  };
+
+  if (supabaseClient) {
+    const { error } = await supabaseClient.from('comments').insert([newComment]);
+    if (error) {
+      return showToast(error.message, 'error');
+    }
+  } else {
+    newComment.id = 'comment_' + Date.now();
+    const comments = JSON.parse(localStorage.getItem(LOCAL_STORAGE_COMMENTS_KEY) || '[]');
+    comments.push(newComment);
+    localStorage.setItem(LOCAL_STORAGE_COMMENTS_KEY, JSON.stringify(comments));
+  }
+
+  commentInput.value = '';
+  showToast('Reply submitted!', 'success');
+  await renderComments(activeModalPostId);
 }
 
 function getFileType(url) {
