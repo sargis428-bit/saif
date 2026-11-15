@@ -72,13 +72,22 @@
         <span>MarbleVet Journal</span>
       </a>
 
-      <div id="nav-user-bar" class="hidden flex items-center gap-4 text-sm">
-        <span id="nav-username" class="text-amber-300 font-medium"></span>
-        <button id="btn-settings" class="text-stone-400 hover:text-amber-400 transition-colors" title="Settings">
-          <i class="fa-solid fa-gear text-lg"></i>
-        </button>
-        <button id="btn-signout" class="px-3 py-1.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white border border-stone-700 transition-all text-xs font-semibold">
-          Sign Out
+      <!-- Top Right Bar -->
+      <div class="flex items-center gap-3 text-sm">
+        <div id="nav-user-bar" class="hidden flex items-center gap-4 text-sm">
+          <span id="nav-username" class="text-amber-300 font-medium"></span>
+          <button id="btn-settings" class="text-stone-400 hover:text-amber-400 transition-colors" title="Settings">
+            <i class="fa-solid fa-gear text-lg"></i>
+          </button>
+          <button id="btn-signout" class="px-3 py-1.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white border border-stone-700 transition-all text-xs font-semibold">
+            Sign Out
+          </button>
+        </div>
+
+        <!-- Small Privacy Policy Button in Top Right Corner -->
+        <button id="btn-open-privacy" type="button" class="px-2.5 py-1 rounded bg-stone-900 hover:bg-stone-800 text-amber-400/90 hover:text-amber-300 border border-amber-900/50 transition-all text-[11px] font-medium flex items-center gap-1" title="View Privacy Policy">
+          <i class="fa-solid fa-shield-halved text-[10px]"></i>
+          <span>Privacy</span>
         </button>
       </div>
     </div>
@@ -202,7 +211,7 @@
       </div>
 
       <!-- COMMUNITY HUB TAB -->
-      <div id="view-community" class="space-y-6">
+      <div id="view-community" class="hidden space-y-6">
         <div class="flex flex-col md:flex-row gap-4 justify-between items-center bg-stone-950/60 p-4 rounded-xl border border-stone-800/80">
           <div class="flex flex-wrap gap-2 text-xs font-medium">
             <button class="cat-filter active px-3 py-1.5 rounded-lg bg-amber-600 text-stone-950 font-bold" data-category="all">All Groups</button>
@@ -347,6 +356,89 @@
 
           <!-- Comments List Container -->
           <div id="comments-list" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PRIVACY POLICY & FIRST-TIME SIGN-IN AGREEMENT MODAL -->
+    <div id="modal-privacy" class="hidden fixed inset-0 z-[60] bg-stone-950/90 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="clean-card max-w-2xl w-full p-6 space-y-4 relative max-h-[90vh] flex flex-col">
+        
+        <!-- Really small "no" button in the top-left corner (shown during first-time sign-in) -->
+        <button id="btn-privacy-no" type="button" class="hidden absolute top-2.5 left-3 text-[9px] text-stone-500 hover:text-rose-400 underline tracking-tight px-1 py-0.5">
+          no
+        </button>
+
+        <!-- Close button (shown only when viewing manually via top-right Privacy button) -->
+        <button id="btn-close-privacy" type="button" class="absolute top-4 right-4 text-stone-400 hover:text-amber-400 text-base">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <!-- Modal Header -->
+        <div class="border-b border-stone-800 pb-3 pt-2 text-center">
+          <h2 class="text-xl font-bold text-amber-100">Privacy Policy for MarbleVet Journal</h2>
+          <p class="text-[11px] text-stone-400 mt-0.5">Effective Date: November 10, 2026 &nbsp;|&nbsp; App: MarbleVet Journal</p>
+        </div>
+
+        <!-- Scrollable Policy Body -->
+        <div class="overflow-y-auto pr-2 space-y-4 text-xs text-stone-300 leading-relaxed flex-1">
+          <div>
+            <h3 class="font-bold text-amber-400 text-sm mb-1">1. Introduction and Overview</h3>
+            <p>Welcome to MarbleVet Journal. This Privacy Policy explains in detail how we collect, store, manage, and protect your information when you use our web application. We believe in straightforward data handling, ensuring that you understand exactly what happens to your information when you upload pet records, participate in discussions, or manage your account.</p>
+          </div>
+
+          <div>
+            <h3 class="font-bold text-amber-400 text-sm mb-1">2. Information We Collect and Purpose of Collection</h3>
+            <ul class="list-disc pl-5 space-y-1.5">
+              <li><strong class="text-amber-100">Account Credentials (Username & Password):</strong> When you register, we collect and save your chosen username and account password. This data is strictly used to create your unique user account, authenticate your login sessions, assign ownership to your posts, and grant you secure access to the app.</li>
+              <li><strong class="text-amber-100">Written Entry Text (Titles & Descriptions):</strong> We save all text entries you create, including post titles, pet health notes, symptom descriptions, and community questions. This text is stored so you can view your personal pet health logs and so other community members can read your public posts.</li>
+              <li><strong class="text-amber-100">File Uploads (Photos, Videos, Audio, and Documents):</strong> When you attach files—such as photos, video clips, audio recordings, or PDF documents—we store these uploads in our cloud database (<code class="text-amber-300">pet-attachments</code> bucket). Saving these files allows the platform to display your attached media and enforce visibility controls depending on whether an entry is set to private or public.</li>
+              <li><strong class="text-amber-100">Community Replies & Comments:</strong> When you post a response or advice on a public community thread, we collect and save the text of your reply. Storing replies enables crowdsourced pet care discussions and keeps the community advice hub visible to all platform users.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="font-bold text-amber-400 text-sm mb-1">3. Data Visibility and Access Controls</h3>
+            <ul class="list-disc pl-5 space-y-1.5">
+              <li><strong class="text-amber-100">Private Pet Health Logs:</strong> Entries marked as private are restricted strictly to your account view within the application interface. Other regular users cannot see or search your private medical notes or documents.</li>
+              <li><strong class="text-amber-100">Public Community Hub Posts:</strong> Entries marked for community or public view, along with associated replies, can be read by all authenticated users signed into the platform.</li>
+              <li><strong class="text-amber-100">Administrator & Infrastructure Access:</strong> Because user accounts, posts, comments, and media files are stored backend in Supabase, authorized platform administrators have direct back-end access to the database records and file storage buckets.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="font-bold text-amber-400 text-sm mb-1">4. Data Retention, Deletion, and Limitations</h3>
+            <ul class="list-disc pl-5 space-y-1.5">
+              <li><strong class="text-amber-100">User Content Removal:</strong> You retain control over your posts and comments and can delete your own content through the app interface.</li>
+              <li><strong class="text-amber-100">Administrative Moderation:</strong> Platform administrators reserve the right to remove any post, reply, file attachment, or user account to enforce community guidelines or resolve technical issues.</li>
+              <li><strong class="text-amber-100">Front-End vs. Back-End Removal:</strong> When content is deleted through the front-end user interface, it is immediately hidden and removed from the active view of all users. However, lingering records, cache copies, or database backups directly within Supabase backend storage may persist temporarily or permanently depending on database archive rules.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="font-bold text-amber-400 text-sm mb-1">5. What We Never Collect</h3>
+            <ul class="list-disc pl-5 space-y-1.5">
+              <li><strong class="text-amber-100">Location Data:</strong> We do not track, request, or store your GPS, IP-based geographic location, or physical address.</li>
+              <li><strong class="text-amber-100">Real Names:</strong> We do not require you to provide your legal real name. You may use any unique username.</li>
+              <li><strong class="text-amber-100">Unnecessary Personal Identifiers:</strong> We do not ask users to submit sensitive personal background information, phone numbers, or unrelated demographic data.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="font-bold text-amber-400 text-sm mb-1">6. Updates to This Policy</h3>
+            <p>We may update this Privacy Policy periodically to reflect changes in our app features or backend infrastructure. Continued use of MarbleVet Journal constitutes acceptance of the current policy.</p>
+          </div>
+        </div>
+
+        <!-- First-Time Sign-In Action Buttons -->
+        <div id="privacy-consent-actions" class="hidden border-t border-stone-800 pt-4 flex flex-col sm:flex-row gap-3 justify-end">
+          <button id="btn-privacy-accept-no-ack" type="button" class="px-4 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 font-semibold text-xs transition-all">
+            Accept with No Acknowledgment
+          </button>
+          <button id="btn-privacy-accept-ack" type="button" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs transition-all shadow">
+            Accept &amp; Acknowledge
+          </button>
         </div>
 
       </div>

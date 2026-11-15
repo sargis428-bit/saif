@@ -8,6 +8,7 @@ let activeModalPostId = null;
 const LOCAL_STORAGE_USERS_KEY = 'marblevet_users_db';
 const LOCAL_STORAGE_POSTS_KEY = 'marblevet_posts_db';
 const LOCAL_STORAGE_COMMENTS_KEY = 'marblevet_comments_db';
+const LOCAL_STORAGE_PRIVACY_KEY = 'marblevet_privacy_consent';
 const STORAGE_BUCKET_NAME = 'pet-attachments';
 
 // Allowed MIME types and file extensions for upload validation
@@ -41,7 +42,7 @@ async function initApp() {
       if (session && session.user) {
         currentUser = session.user;
         localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
-        await fetchProfile(currentUser.id);
+        await proceedAfterAuth(currentUser);
         return;
       }
     } catch (err) {
@@ -53,7 +54,7 @@ async function initApp() {
   const savedUser = localStorage.getItem('marblevet_session');
   if (savedUser) {
     currentUser = JSON.parse(savedUser);
-    await fetchProfile(currentUser.id);
+    await proceedAfterAuth(currentUser);
   } else {
     showScreen('auth');
   }
@@ -102,6 +103,13 @@ function setupEventListeners() {
 
   document.getElementById('btn-close-view-modal').addEventListener('click', () => document.getElementById('modal-view-post').classList.add('hidden'));
 
+  // Privacy Policy Modal Triggers
+  document.getElementById('btn-open-privacy').addEventListener('click', () => openPrivacyModal(false));
+  document.getElementById('btn-close-privacy').addEventListener('click', () => document.getElementById('modal-privacy').classList.add('hidden'));
+  document.getElementById('btn-privacy-accept-ack').addEventListener('click', () => handlePrivacyDecision('acknowledged'));
+  document.getElementById('btn-privacy-accept-no-ack').addEventListener('click', () => handlePrivacyDecision('no_acknowledgment'));
+  document.getElementById('btn-privacy-no').addEventListener('click', () => handlePrivacyDecision('declined'));
+
   document.getElementById('post-form').addEventListener('submit', handleCreatePost);
   
   const commentForm = document.getElementById('comment-form');
@@ -125,6 +133,76 @@ function setupEventListeners() {
   });
 
   document.getElementById('search-input').addEventListener('input', renderPosts);
+}
+
+// Privacy Policy & First-Time Sign-In Flow
+function getUserPrivacyStatus(userId) {
+  const consents = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PRIVACY_KEY) || '{}');
+  return consents[userId] || null;
+}
+
+function setUserPrivacyStatus(userId, status) {
+  const consents = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PRIVACY_KEY) || '{}');
+  consents[userId] = {
+    status,
+    timestamp: new Date().toISOString()
+  };
+  localStorage.setItem(LOCAL_STORAGE_PRIVACY_KEY, JSON.stringify(consents));
+}
+
+function openPrivacyModal(isFirstSignIn) {
+  const modal = document.getElementById('modal-privacy');
+  const btnNo = document.getElementById('btn-privacy-no');
+  const btnClose = document.getElementById('btn-close-privacy');
+  const actionsBar = document.getElementById('privacy-consent-actions');
+
+  if (isFirstSignIn) {
+    btnNo.classList.remove('hidden');
+    actionsBar.classList.remove('hidden');
+    btnClose.classList.add('hidden');
+  } else {
+    btnNo.classList.add('hidden');
+    actionsBar.classList.add('hidden');
+    btnClose.classList.remove('hidden');
+  }
+
+  modal.classList.remove('hidden');
+}
+
+async function proceedAfterAuth(user) {
+  const existingDecision = getUserPrivacyStatus(user.id);
+  if (!existingDecision) {
+    openPrivacyModal(true);
+    return;
+  }
+  await fetchProfile(user.id);
+}
+
+async function handlePrivacyDecision(choice) {
+  const modal = document.getElementById('modal-privacy');
+
+  if (choice === 'declined') {
+    modal.classList.add('hidden');
+    handleSignOut();
+    showToast('Privacy agreement declined. You have been signed out.', 'error');
+    return;
+  }
+
+  if (currentUser) {
+    setUserPrivacyStatus(currentUser.id, choice);
+  }
+
+  modal.classList.add('hidden');
+  showToast(
+    choice === 'acknowledged'
+      ? 'Privacy agreement accepted and acknowledged.'
+      : 'Privacy agreement accepted without acknowledgment.',
+    'success'
+  );
+
+  if (currentUser) {
+    await fetchProfile(currentUser.id);
+  }
 }
 
 function setAuthMode(mode) {
@@ -218,7 +296,7 @@ async function handleAuthSubmit(e) {
 
     localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
     showToast(currentAuthMode === 'signup' ? 'Account created successfully!' : 'Signed in successfully!', 'success');
-    await fetchProfile(currentUser.id);
+    await proceedAfterAuth(currentUser);
   } catch (err) {
     showToast(err.message || 'An unexpected error occurred.', 'error');
   }
@@ -241,7 +319,7 @@ async function handleGitHubAuth() {
     currentUser = { id: 'usr_github_' + Date.now(), email: 'github_user@petcare.com' };
     localStorage.setItem('marblevet_session', JSON.stringify(currentUser));
     showToast('Signed in with GitHub!', 'success');
-    await fetchProfile(currentUser.id);
+    await proceedAfterAuth(currentUser);
   }
 }
 
@@ -660,6 +738,23 @@ async function handleCreateComment(e) {
     console.error('Catch handleCreateComment error:', err);
     showToast(err.message || 'Failed to post reply.', 'error');
   }
+}
+
+function getFileType(url) {
+  if (!url) return 'document';
+  const clean = url.split('?')[0].toLowerCase();
+  if (clean.startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif)$/.test(clean)) return 'image';
+  if (clean.startsWith('data:video') || /\.(mp4|mov)$/.test(clean)) return 'video';
+  if (clean.startsWith('data:audio') || /\.(mp3|m4a|wav)$/.test(clean)) return 'audio';
+  return 'document';
+}
+
+function handleImageError(img) {
+  img.parentElement.innerHTML = `
+    <div class="w-full h-full flex flex-col items-center justify-center text-stone-500 gap-1">
+      <i class="fa-regular fa-image text-xl"></i>
+      <span class="text-[10px]">Image Unavailable</span>
+    </div>`;
 }
 
 function renderThumbnailBox(url) {
