@@ -35,6 +35,7 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'mov', 'mp3', 'm4a', 'wav', 'pdf', 'docx', 'doc', 'zip'];
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB default
 
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
@@ -188,26 +189,40 @@ function setupEventListeners() {
 // ============================================================================
 // APP SETTINGS LOADER (public.app_settings)
 // ============================================================================
+function parseBoolSetting(val, fallback) {
+  if (typeof val === 'boolean') return val;
+  if (val === 'true') return true;
+  if (val === 'false') return false;
+  return fallback;
+}
+
 async function loadAppSettings() {
-  if (supabaseClient) {
-    const { data, error } = await supabaseClient.from('app_settings').select('key, value');
-    if (!error && Array.isArray(data)) {
-      data.forEach(row => {
-        if (row.key in appSettings) {
-          appSettings[row.key] = row.value;
-        }
-      });
+  try {
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient.from('app_settings').select('key, value');
+      if (!error && Array.isArray(data)) {
+        data.forEach(row => {
+          if (row.key in appSettings) {
+            appSettings[row.key] = row.value;
+          }
+        });
+      }
+    } else {
+      const saved = JSON.parse(localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY) || 'null');
+      if (saved) appSettings = { ...appSettings, ...saved };
     }
-  } else {
-    const saved = JSON.parse(localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY) || 'null');
-    if (saved) appSettings = { ...appSettings, ...saved };
+  } catch (err) {
+    console.warn('Could not load app_settings, using defaults:', err);
   }
+
+  appSettings.maintenance_mode = parseBoolSetting(appSettings.maintenance_mode, false);
+  appSettings.allow_public_posts = parseBoolSetting(appSettings.allow_public_posts, true);
+  appSettings.max_upload_mb = Number(appSettings.max_upload_mb) || 50;
 
   applyAppSettingsToUI();
 }
 
 function applyAppSettingsToUI() {
-  // 1. Announcement Banner
   const bannerBar = document.getElementById('global-announcement-bar');
   const bannerText = document.getElementById('global-announcement-text');
   if (appSettings.announcement_banner && String(appSettings.announcement_banner).trim() !== '') {
@@ -217,12 +232,10 @@ function applyAppSettingsToUI() {
     bannerBar.classList.add('hidden');
   }
 
-  // 2. Max Upload Size Label
   const maxMb = Number(appSettings.max_upload_mb) || 50;
   const labelMax = document.getElementById('label-max-upload-mb');
   if (labelMax) labelMax.innerText = maxMb;
 
-  // 3. Allow Public Posts Toggle
   const publicOpt = document.getElementById('option-visibility-public');
   if (publicOpt) {
     if (appSettings.allow_public_posts === false) {
@@ -235,11 +248,14 @@ function applyAppSettingsToUI() {
     }
   }
 
-  // 4. Populate Admin Form Inputs
-  document.getElementById('setting-maintenance-mode').checked = Boolean(appSettings.maintenance_mode);
-  document.getElementById('setting-allow-public').checked = appSettings.allow_public_posts !== false;
-  document.getElementById('setting-max-upload-mb').value = maxMb;
-  document.getElementById('setting-announcement-banner').value = appSettings.announcement_banner || '';
+  const maintInput = document.getElementById('setting-maintenance-mode');
+  if (maintInput) maintInput.checked = Boolean(appSettings.maintenance_mode);
+  const allowPubInput = document.getElementById('setting-allow-public');
+  if (allowPubInput) allowPubInput.checked = appSettings.allow_public_posts !== false;
+  const maxUpInput = document.getElementById('setting-max-upload-mb');
+  if (maxUpInput) maxUpInput.value = maxMb;
+  const annInput = document.getElementById('setting-announcement-banner');
+  if (annInput) annInput.value = appSettings.announcement_banner || '';
 }
 
 async function handleSaveAppSettings(e) {
@@ -477,7 +493,6 @@ async function fetchProfile(userId) {
                          (currentUser?.email ? currentUser.email.split('@')[0] : null);
 
   if (!profile && githubUsername) {
-    // Enforce RLS insert rule: role = 'user', is_banned = false
     profile = {
       id: userId,
       username: githubUsername,
@@ -510,7 +525,6 @@ async function fetchProfile(userId) {
 function configureRoleWorkspace(profile) {
   const role = profile.role || 'user';
 
-  // Update Header User & Role Badge
   document.getElementById('nav-username').innerText = `@${profile.username}`;
   document.getElementById('nav-user-bar').classList.remove('hidden');
 
@@ -524,7 +538,6 @@ function configureRoleWorkspace(profile) {
     badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-amber-950/80 text-amber-300 border-amber-700/50';
   }
 
-  // 1. Check if User is Banned (SQL: is_banned = true)
   if (profile.is_banned) {
     document.getElementById('banned-username').innerText = `@${profile.username}`;
     document.getElementById('banned-meta').innerText = profile.banned_at
@@ -534,13 +547,11 @@ function configureRoleWorkspace(profile) {
     return;
   }
 
-  // 2. Check Maintenance Mode (Admin bypasses maintenance mode)
-  if (appSettings.maintenance_mode && role !== 'admin') {
+  if (appSettings.maintenance_mode === true && role !== 'admin') {
     showScreen('maintenance');
     return;
   }
 
-  // 3. Configure Role-Specific Navigation Tabs
   const modTabBtn = document.getElementById('tab-nav-moderator');
   const adminTabBtn = document.getElementById('tab-nav-admin');
 
@@ -693,10 +704,12 @@ function switchAdminSubtab(sub) {
 }
 
 // ============================================================================
-// FILE UPLOADS & POSTS (USER VIEW)
+// FILE UPLOADS & POST CREATION (RESTORED WORKING PIPELINE)
 // ============================================================================
 async function uploadFileToStorage(file) {
-  if (!supabaseClient) return await readFileAsDataURL(file);
+  if (!supabaseClient) {
+    return await readFileAsDataURL(file);
+  }
 
   const ext = file.name.split('.').pop().toLowerCase();
   const fileName = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
@@ -705,7 +718,9 @@ async function uploadFileToStorage(file) {
     .from(STORAGE_BUCKET_NAME)
     .upload(fileName, file, { cacheControl: '3600', upsert: false });
 
-  if (error) throw new Error(`Upload failed: ${error.message}`);
+  if (error) {
+    throw new Error(`Upload failed: ${error.message}`);
+  }
 
   const { data: publicUrlData } = supabaseClient.storage
     .from(STORAGE_BUCKET_NAME)
@@ -716,13 +731,14 @@ async function uploadFileToStorage(file) {
 
 async function handleCreatePost(e) {
   e.preventDefault();
+
   if (currentProfile?.is_banned) {
     return showToast('Banned accounts cannot create posts.', 'error');
   }
 
   const title = document.getElementById('post-title').value.trim();
   const category = document.getElementById('post-category').value;
-  let visibility = document.getElementById('post-visibility').value;
+  const visibility = document.getElementById('post-visibility').value;
   const content = document.getElementById('post-content').value.trim();
   const fileInput = document.getElementById('post-file');
 
@@ -730,13 +746,17 @@ async function handleCreatePost(e) {
     return showToast('Public community posts are currently disabled by the Admin.', 'error');
   }
 
+  if (!currentProfile || !currentProfile.username) {
+    await fetchProfile(currentUser.id);
+  }
+
   let file_url = null;
   if (fileInput.files.length > 0) {
     const file = fileInput.files[0];
-    const maxBytes = (Number(appSettings.max_upload_mb) || 50) * 1024 * 1024;
+    const maxBytes = (Number(appSettings.max_upload_mb) > 0 ? Number(appSettings.max_upload_mb) : 50) * 1024 * 1024;
 
     if (file.size > maxBytes) {
-      return showToast(`File size exceeds the ${appSettings.max_upload_mb}MB limit.`, 'error');
+      return showToast('File size exceeds the limit.', 'error');
     }
 
     const ext = file.name.split('.').pop().toLowerCase();
@@ -762,14 +782,15 @@ async function handleCreatePost(e) {
     content,
     category,
     visibility,
-    status: 'active',
     file_url,
     created_at: new Date().toISOString()
   };
 
   if (supabaseClient) {
-    const { error } = await supabaseClient.from('posts').insert([newPost]).select();
-    if (error) return showToast(error.message, 'error');
+    const { data, error } = await supabaseClient.from('posts').insert([newPost]).select();
+    if (error) {
+      return showToast(error.message, 'error');
+    }
   } else {
     newPost.id = 'post_' + Date.now();
     const posts = JSON.parse(localStorage.getItem(LOCAL_STORAGE_POSTS_KEY) || '[]');
@@ -842,7 +863,7 @@ async function renderPosts() {
   }
 
   // 2. Community Hub (Shows active public posts)
-  let publicPosts = loadedPosts.filter(p => p.visibility === 'public' && (p.status || 'active') === 'active');
+  let publicPosts = loadedPosts.filter(p => p.visibility !== 'private' && (!p.status || p.status === 'active'));
   if (activeCategory !== 'all') {
     publicPosts = publicPosts.filter(p => p.category === activeCategory);
   }
@@ -854,7 +875,7 @@ async function renderPosts() {
     communityFeed.innerHTML = `
       <div class="col-span-full clean-card p-8 text-center text-stone-400">
         <i class="fa-solid fa-comments text-3xl text-amber-500/50 mb-2"></i>
-        <p class="text-sm">No active community questions found.</p>
+        <p class="text-sm">No community questions found.</p>
       </div>`;
   } else {
     communityFeed.innerHTML = publicPosts.map(p => `
@@ -889,7 +910,6 @@ async function openPostModal(postId) {
 
   const role = getCurrentRole();
   const isOwner = post.user_id === currentUser?.id;
-  const isModOrAdmin = role === 'moderator' || role === 'admin';
   const status = post.status || 'active';
 
   activeModalPostId = postId;
@@ -899,12 +919,10 @@ async function openPostModal(postId) {
   document.getElementById('view-post-date').innerText = new Date(post.created_at).toLocaleString();
   document.getElementById('view-post-content').innerText = post.content;
 
-  // Status Badge
   const statusBadge = document.getElementById('view-post-status-badge');
   statusBadge.innerText = status.replace('_', ' ');
   statusBadge.className = getStatusBadgeClass(status);
 
-  // Delete Button Visibility (Owners, Mods on public posts, Admin on all)
   const delBtn = document.getElementById('btn-delete-post-modal');
   if (isOwner || (role === 'moderator' && post.visibility === 'public') || role === 'admin') {
     delBtn.classList.remove('hidden');
@@ -912,7 +930,6 @@ async function openPostModal(postId) {
     delBtn.classList.add('hidden');
   }
 
-  // Moderator/Admin Review Panel inside Modal
   const modControls = document.getElementById('view-post-mod-controls');
   if ((role === 'moderator' && post.visibility === 'public') || role === 'admin') {
     modControls.classList.remove('hidden');
@@ -922,7 +939,6 @@ async function openPostModal(postId) {
     modControls.classList.add('hidden');
   }
 
-  // Media
   const mediaContainer = document.getElementById('view-post-media-container');
   const mediaContent = document.getElementById('view-post-media-content');
   if (post.file_url) {
@@ -933,7 +949,6 @@ async function openPostModal(postId) {
     mediaContent.innerHTML = '';
   }
 
-  // Comments
   const commentsSection = document.getElementById('view-post-comments-section');
   if (post.visibility === 'private') {
     commentsSection.classList.add('hidden');
@@ -1081,6 +1096,14 @@ async function handleCreateComment(e) {
   const content = commentInput.value.trim();
   if (!content || !activeModalPostId) return;
 
+  if (!currentUser) {
+    return showToast('You must be logged in to leave a reply.', 'error');
+  }
+
+  if (!currentProfile || !currentProfile.username) {
+    await fetchProfile(currentUser.id);
+  }
+
   const newComment = {
     post_id: String(activeModalPostId),
     user_id: currentUser.id,
@@ -1202,7 +1225,6 @@ function renderModeratorUsers() {
   container.innerHTML = allProfiles.map(u => {
     const role = u.role || 'user';
     const isSelf = u.id === currentUser?.id;
-    // SQL Trigger Rule: Moderators can ONLY ban/unban 'user' accounts
     const canBan = !isSelf && role === 'user';
 
     return `
@@ -1293,23 +1315,19 @@ function renderAdminUsers() {
 
         <div class="flex flex-wrap items-center gap-2">
           ${!isSelf ? `
-            <!-- Role Assignment (user <-> moderator) -->
             <select onchange="handleAdminChangeRole('${u.id}', this.value)" class="bg-stone-900 border border-stone-700 rounded px-2.5 py-1.5 text-xs text-stone-200">
               <option value="user" ${role === 'user' ? 'selected' : ''}>Role: User</option>
               <option value="moderator" ${role === 'moderator' ? 'selected' : ''}>Role: Moderator</option>
             </select>
 
-            <!-- Transfer Single Admin Slot -->
             <button type="button" onclick="handleTransferAdminSlot('${u.id}', '${escapeHtml(u.username)}')" class="px-3 py-1.5 rounded bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/40 text-xs font-semibold" title="Transfer single admin slot">
               <i class="fa-solid fa-crown mr-1"></i> Make Admin
             </button>
 
-            <!-- Ban / Unban -->
             <button type="button" onclick="toggleUserBan('${u.id}', ${!u.is_banned})" class="px-3 py-1.5 rounded text-xs font-bold ${u.is_banned ? 'bg-emerald-600 hover:bg-emerald-500 text-stone-950' : 'bg-rose-700 hover:bg-rose-600 text-white'}">
               ${u.is_banned ? 'Unban' : 'Ban'}
             </button>
 
-            <!-- Delete Profile -->
             <button type="button" onclick="handleAdminDeleteProfile('${u.id}', '${escapeHtml(u.username)}')" class="px-2.5 py-1.5 rounded bg-stone-900 hover:bg-rose-950 text-rose-400 border border-stone-700 hover:border-rose-700 text-xs" title="Delete Profile">
               <i class="fa-solid fa-trash"></i>
             </button>
@@ -1338,190 +1356,4 @@ async function handleAdminChangeRole(targetUserId, newRole) {
     const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PROFILES_KEY) || '{}');
     if (profiles[targetUserId]) {
       profiles[targetUserId].role = newRole;
-      localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY, JSON.stringify(profiles));
-    }
-  }
-
-  showToast(`User role updated to ${newRole}.`, 'success');
-  await refreshAdminData();
-}
-
-async function handleTransferAdminSlot(targetUserId, targetUsername) {
-  if (getCurrentRole() !== 'admin') return;
-  const confirmed = confirm(
-    `WARNING: There is only ONE Admin slot in MarbleVet Journal.\n\nTransferring Admin to @${targetUsername} will demote your own account to 'moderator'. Continue?`
-  );
-  if (!confirmed) return;
-
-  if (supabaseClient) {
-    // Step 1: Demote current admin to moderator first so single_admin_slot_idx unique index stays valid
-    const { error: demoteErr } = await supabaseClient
-      .from('profiles')
-      .update({ role: 'moderator' })
-      .eq('id', currentUser.id);
-    if (demoteErr) return showToast(demoteErr.message, 'error');
-
-    // Step 2: Promote target user into the single admin slot
-    const { error: promoteErr } = await supabaseClient
-      .from('profiles')
-      .update({ role: 'admin' })
-      .eq('id', targetUserId);
-    if (promoteErr) return showToast(promoteErr.message, 'error');
-  } else {
-    const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PROFILES_KEY) || '{}');
-    if (profiles[currentUser.id]) profiles[currentUser.id].role = 'moderator';
-    if (profiles[targetUserId]) profiles[targetUserId].role = 'admin';
-    localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY, JSON.stringify(profiles));
-  }
-
-  showToast(`Admin slot transferred to @${targetUsername}.`, 'success');
-  await fetchProfile(currentUser.id);
-}
-
-async function handleAdminDeleteProfile(targetUserId, targetUsername) {
-  if (!confirm(`Permanently delete profile @${targetUsername}? This cannot be undone.`)) return;
-
-  if (supabaseClient) {
-    const { error } = await supabaseClient.from('profiles').delete().eq('id', targetUserId);
-    if (error) return showToast(error.message, 'error');
-  } else {
-    const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PROFILES_KEY) || '{}');
-    delete profiles[targetUserId];
-    localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY, JSON.stringify(profiles));
-  }
-
-  showToast(`Profile @${targetUsername} deleted.`, 'success');
-  await refreshAdminData();
-}
-
-function renderAdminPosts() {
-  const container = document.getElementById('admin-posts-list');
-  if (loadedPosts.length === 0) {
-    container.innerHTML = `<div class="clean-card p-6 text-center text-xs text-stone-400">No posts in database.</div>`;
-    return;
-  }
-
-  container.innerHTML = loadedPosts.map(p => {
-    const status = p.status || 'active';
-    return `
-      <div class="clean-card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="space-y-1">
-          <div class="flex flex-wrap items-center gap-2 text-xs">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${p.visibility === 'private' ? 'bg-purple-950 text-purple-300 border border-purple-700' : 'bg-amber-950 text-amber-300 border border-amber-700'}">
-              ${escapeHtml(p.visibility)}
-            </span>
-            <span class="${getStatusBadgeClass(status)} text-[10px] font-bold uppercase px-2 py-0.5 rounded border">${status.replace('_', ' ')}</span>
-            <span class="font-bold text-amber-300">@${escapeHtml(p.author_username || 'anonymous')}</span>
-            <span class="text-stone-500">• ${new Date(p.created_at).toLocaleString()}</span>
-          </div>
-          <h4 class="font-bold text-amber-100 text-sm">${escapeHtml(p.title)}</h4>
-          <p class="text-xs text-stone-400 line-clamp-1">${escapeHtml(p.content)}</p>
-        </div>
-
-        <div class="flex items-center gap-2 shrink-0">
-          <button type="button" onclick="openPostModal('${p.id}')" class="px-3 py-1.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold">
-            Open
-          </button>
-          <button type="button" onclick="handleDeletePost('${p.id}')" class="px-3 py-1.5 rounded bg-rose-800 hover:bg-rose-700 text-white text-xs font-semibold">
-            Delete
-          </button>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-// ============================================================================
-// MEDIA & UI HELPERS
-// ============================================================================
-function getStatusBadgeClass(status) {
-  if (status === 'under_review') return 'bg-amber-950 text-amber-300 border-amber-600/60';
-  if (status === 'removed') return 'bg-rose-950 text-rose-300 border-rose-600/60';
-  return 'bg-emerald-950 text-emerald-300 border-emerald-600/60';
-}
-
-function getFileType(url) {
-  if (!url) return 'document';
-  const clean = url.split('?')[0].toLowerCase();
-  if (clean.startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif)$/.test(clean)) return 'image';
-  if (clean.startsWith('data:video') || /\.(mp4|mov)$/.test(clean)) return 'video';
-  if (clean.startsWith('data:audio') || /\.(mp3|m4a|wav)$/.test(clean)) return 'audio';
-  return 'document';
-}
-
-function handleImageError(img) {
-  img.parentElement.innerHTML = `
-    <div class="w-full h-full flex flex-col items-center justify-center text-stone-500 gap-1">
-      <i class="fa-regular fa-image text-xl"></i>
-      <span class="text-[10px]">Image Unavailable</span>
-    </div>`;
-}
-
-function renderThumbnailBox(url) {
-  if (!url) {
-    return `
-      <div class="w-full h-36 rounded-lg bg-stone-900/60 border border-stone-800 flex flex-col items-center justify-center text-stone-600 gap-1.5">
-        <i class="fa-regular fa-file text-2xl"></i>
-        <span class="text-[11px]">No Attachment</span>
-      </div>`;
-  }
-
-  const type = getFileType(url);
-  if (type === 'image') {
-    return `
-      <div class="w-full h-36 rounded-lg bg-stone-950 overflow-hidden border border-stone-800 relative">
-        <img src="${url}" onerror="handleImageError(this)" class="w-full h-full object-cover" alt="Upload thumbnail" />
-      </div>`;
-  }
-  if (type === 'video') {
-    return `
-      <div class="w-full h-36 rounded-lg bg-stone-950 flex flex-col items-center justify-center border border-stone-800 relative gap-2 text-amber-400">
-        <i class="fa-solid fa-circle-play text-3xl"></i>
-        <span class="text-xs text-stone-400 font-medium">Video Attached</span>
-      </div>`;
-  }
-  if (type === 'audio') {
-    return `
-      <div class="w-full h-36 rounded-lg bg-stone-950 flex flex-col items-center justify-center border border-stone-800 text-amber-400 gap-2">
-        <i class="fa-solid fa-file-audio text-3xl"></i>
-        <span class="text-xs text-stone-400 font-medium">Audio Recording</span>
-      </div>`;
-  }
-  return `
-    <div class="w-full h-36 rounded-lg bg-stone-950 flex flex-col items-center justify-center border border-stone-800 text-amber-400 gap-2">
-      <i class="fa-solid fa-file-lines text-3xl"></i>
-      <span class="text-xs text-stone-400 font-medium">Document Attached</span>
-    </div>`;
-}
-
-function renderCenteredMedia(url) {
-  const type = getFileType(url);
-  if (type === 'image') {
-    return `<img src="${url}" onerror="handleImageError(this)" class="max-h-[60vh] max-w-full rounded-lg object-contain shadow-2xl border border-stone-800" alt="Post attachment" />`;
-  }
-  if (type === 'video') {
-    return `<video src="${url}" controls class="max-h-[60vh] max-w-full rounded-lg shadow-2xl border border-stone-800"></video>`;
-  }
-  if (type === 'audio') {
-    return `<audio src="${url}" controls class="w-full max-w-md my-4"></audio>`;
-  }
-  return `<a href="${url}" download target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-5 py-3 bg-amber-600/20 text-amber-300 hover:bg-amber-600/30 border border-amber-500/40 rounded-xl inline-flex items-center gap-2.5 text-sm font-semibold transition-all"><i class="fa-solid fa-file-arrow-down text-base"></i> View / Download Full Attachment</a>`;
-}
-
-function showToast(msg, type = 'info') {
-  const toastMsg = document.getElementById('toast-message');
-  const toast = document.getElementById('toast');
-  toastMsg.innerText = msg;
-  toast.className = `fixed bottom-5 right-5 z-50 px-5 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-3 transition-all duration-300 ${
-    type === 'error' ? 'bg-rose-900 text-rose-100 border border-rose-700' :
-    type === 'success' ? 'bg-emerald-900 text-emerald-100 border border-emerald-700' :
-    'bg-stone-800 text-amber-300 border border-amber-900'
-  }`;
-  toast.classList.remove('hidden');
-  setTimeout(() => toast.classList.add('hidden'), 3500);
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
+      localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY,
