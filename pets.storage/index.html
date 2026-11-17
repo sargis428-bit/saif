@@ -74,8 +74,11 @@
 
       <!-- Top Right Bar -->
       <div class="flex items-center gap-3 text-sm">
-        <div id="nav-user-bar" class="hidden flex items-center gap-4 text-sm">
-          <span id="nav-username" class="text-amber-300 font-medium"></span>
+        <div id="nav-user-bar" class="hidden flex items-center gap-3 text-sm">
+          <div class="flex items-center gap-2">
+            <span id="nav-username" class="text-amber-300 font-medium"></span>
+            <span id="nav-role-badge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border"></span>
+          </div>
           <button id="btn-settings" class="text-stone-400 hover:text-amber-400 transition-colors" title="Settings">
             <i class="fa-solid fa-gear text-lg"></i>
           </button>
@@ -90,6 +93,12 @@
           <span>Privacy</span>
         </button>
       </div>
+    </div>
+
+    <!-- Global Announcement Banner (Controlled by Admin via app_settings) -->
+    <div id="global-announcement-bar" class="hidden bg-amber-600/20 border-t border-amber-500/30 px-4 py-2 text-center text-xs text-amber-200 font-medium">
+      <i class="fa-solid fa-bullhorn text-amber-400 mr-1.5"></i>
+      <span id="global-announcement-text"></span>
     </div>
   </header>
 
@@ -175,10 +184,45 @@
       </div>
     </section>
 
-    <!-- 3. DASHBOARD MAIN APP -->
+    <!-- 2B. BANNED USER LOCKOUT SCREEN -->
+    <section id="screen-banned" class="hidden max-w-lg mx-auto py-16">
+      <div class="clean-card p-8 border-rose-800/70 text-center space-y-4">
+        <div class="w-14 h-14 rounded-2xl bg-rose-950/80 border border-rose-700/60 text-rose-400 flex items-center justify-center text-2xl mx-auto">
+          <i class="fa-solid fa-ban"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-rose-200">Account Suspended</h2>
+        <p class="text-stone-300 text-xs leading-relaxed">
+          Your account (<span id="banned-username" class="font-bold text-amber-300"></span>) has been banned by a Moderator or Administrator. While banned, you cannot create posts, submit replies, or access the community hub.
+        </p>
+        <div id="banned-meta" class="text-[11px] text-stone-400 bg-stone-950/80 border border-stone-800 rounded-lg p-3"></div>
+        <button id="btn-banned-signout" type="button" class="px-5 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 text-xs font-semibold">
+          Sign Out
+        </button>
+      </div>
+    </section>
+
+    <!-- 2C. MAINTENANCE MODE SCREEN (Shown to non-admins when maintenance_mode = true) -->
+    <section id="screen-maintenance" class="hidden max-w-lg mx-auto py-16">
+      <div class="clean-card p-8 border-amber-700/60 text-center space-y-4">
+        <div class="w-14 h-14 rounded-2xl bg-amber-950/80 border border-amber-600/50 text-amber-400 flex items-center justify-center text-2xl mx-auto">
+          <i class="fa-solid fa-screwdriver-wrench"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-amber-100">Scheduled Maintenance</h2>
+        <p class="text-stone-300 text-xs leading-relaxed">
+          MarbleVet Journal is currently in maintenance mode. Normal users and moderators cannot make changes until the Administrator re-opens access.
+        </p>
+        <button id="btn-maint-signout" type="button" class="px-5 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 text-xs font-semibold">
+          Sign Out
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. DASHBOARD MAIN APP (ROLE-AWARE) -->
     <section id="screen-app" class="hidden space-y-6">
+      <!-- Role Navigation Bar -->
       <div class="flex flex-wrap items-center justify-between border-b border-stone-800 pb-4 gap-4">
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
+          <!-- Standard User Screens (Available to User, Moderator, Admin) -->
           <button id="tab-nav-log" class="tab-btn active px-4 py-2 rounded-lg text-xs font-semibold text-stone-300 border border-stone-800 transition-all flex items-center gap-2">
             <i class="fa-solid fa-book-medical text-sm"></i>
             Private Pet Health Log
@@ -186,6 +230,18 @@
           <button id="tab-nav-community" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold text-stone-300 border border-stone-800 transition-all flex items-center gap-2">
             <i class="fa-solid fa-users text-sm"></i>
             Community Advice Hub
+          </button>
+
+          <!-- Moderator Screen Tab (Visible to Moderator & Admin) -->
+          <button id="tab-nav-moderator" class="hidden tab-btn px-4 py-2 rounded-lg text-xs font-semibold text-sky-300 border border-sky-800/60 bg-sky-950/30 hover:border-sky-500 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-sm"></i>
+            Moderator Queue
+          </button>
+
+          <!-- Admin Screen Tab (Visible ONLY to Admin) -->
+          <button id="tab-nav-admin" class="hidden tab-btn px-4 py-2 rounded-lg text-xs font-semibold text-rose-300 border border-rose-800/60 bg-rose-950/30 hover:border-rose-500 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-crown text-sm"></i>
+            Admin Console
           </button>
         </div>
 
@@ -195,7 +251,9 @@
         </button>
       </div>
 
-      <!-- HEALTH LOG TAB -->
+      <!-- ========================================================= -->
+      <!-- SCREEN A: USER - HEALTH LOG TAB                           -->
+      <!-- ========================================================= -->
       <div id="view-health-log" class="space-y-6">
         <div class="flex justify-between items-center bg-stone-950/60 p-4 rounded-xl border border-stone-800/80">
           <div>
@@ -210,7 +268,9 @@
         <div id="log-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </div>
 
-      <!-- COMMUNITY HUB TAB -->
+      <!-- ========================================================= -->
+      <!-- SCREEN B: USER - COMMUNITY HUB TAB                        -->
+      <!-- ========================================================= -->
       <div id="view-community" class="hidden space-y-6">
         <div class="flex flex-col md:flex-row gap-4 justify-between items-center bg-stone-950/60 p-4 rounded-xl border border-stone-800/80">
           <div class="flex flex-wrap gap-2 text-xs font-medium">
@@ -229,6 +289,170 @@
 
         <div id="community-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </div>
+
+      <!-- ========================================================= -->
+      <!-- SCREEN C: MODERATOR WORKSPACE SCREEN                      -->
+      <!-- ========================================================= -->
+      <div id="view-moderator" class="hidden space-y-6">
+        <div class="bg-sky-950/30 p-5 rounded-xl border border-sky-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-sky-200 flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved text-sky-400"></i>
+              Moderator Workspace
+            </h2>
+            <p class="text-stone-300 text-xs mt-1">
+              Review public community posts (`active`, `under_review`, `removed`), add review notes, delete rule-breaking comments, and ban/unban standard <code class="text-sky-300">user</code> accounts.
+            </p>
+          </div>
+          <div class="flex gap-2 text-xs">
+            <span id="mod-stat-review" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold">0 Under Review</span>
+            <span id="mod-stat-banned" class="px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold">0 Banned Users</span>
+          </div>
+        </div>
+
+        <!-- Moderator Sub-Navigation -->
+        <div class="flex gap-2 border-b border-stone-800 pb-3">
+          <button id="mod-subtab-posts" type="button" class="px-3.5 py-1.5 rounded-lg bg-sky-600 text-stone-950 font-bold text-xs">
+            Public Post Moderation Queue
+          </button>
+          <button id="mod-subtab-users" type="button" class="px-3.5 py-1.5 rounded-lg bg-stone-900 text-stone-300 border border-stone-800 hover:border-sky-500 text-xs font-semibold">
+            User Ban Controls (Users Only)
+          </button>
+        </div>
+
+        <!-- Mod Panel 1: Public Post Queue -->
+        <div id="mod-panel-posts" class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex gap-2 text-xs">
+              <button class="mod-status-filter px-3 py-1 rounded bg-sky-600 text-stone-950 font-bold" data-status="all">All Public</button>
+              <button class="mod-status-filter px-3 py-1 rounded bg-stone-900 text-stone-400 border border-stone-800" data-status="active">Active</button>
+              <button class="mod-status-filter px-3 py-1 rounded bg-stone-900 text-stone-400 border border-stone-800" data-status="under_review">Under Review</button>
+              <button class="mod-status-filter px-3 py-1 rounded bg-stone-900 text-stone-400 border border-stone-800" data-status="removed">Removed</button>
+            </div>
+            <button type="button" onclick="refreshModerationData()" class="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-700 text-xs">
+              <i class="fa-solid fa-rotate mr-1"></i> Refresh
+            </button>
+          </div>
+
+          <div id="mod-posts-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Mod Panel 2: User Ban Management (Normal 'user' accounts only) -->
+        <div id="mod-panel-users" class="hidden space-y-4">
+          <div class="bg-stone-950/70 border border-stone-800 rounded-lg p-3 text-xs text-stone-400">
+            <i class="fa-solid fa-circle-info text-sky-400 mr-1.5"></i>
+            Per database governance rules, Moderators can ban or unban <strong class="text-stone-200">user</strong> accounts only. Moderator and Admin accounts are protected.
+          </div>
+          <div id="mod-users-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+      </div>
+
+      <!-- ========================================================= -->
+      <!-- SCREEN D: ADMIN CONSOLE SCREEN (SINGLE ADMIN SLOT)        -->
+      <!-- ========================================================= -->
+      <div id="view-admin" class="hidden space-y-6">
+        <div class="bg-rose-950/30 p-5 rounded-xl border border-rose-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-rose-200 flex items-center gap-2">
+              <i class="fa-solid fa-crown text-amber-400"></i>
+              Single-Admin Control Console
+            </h2>
+            <p class="text-stone-300 text-xs mt-1">
+              Full system governance: configure global <code class="text-rose-300">app_settings</code>, assign/revoke <code class="text-rose-300">moderator</code> roles, transfer the single <code class="text-amber-300">admin</code> slot, ban/delete any profile, and audit all posts.
+            </p>
+          </div>
+          <span class="px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-bold self-start">
+            Single Admin Slot Active
+          </span>
+        </div>
+
+        <!-- Admin Sub-Navigation -->
+        <div class="flex flex-wrap gap-2 border-b border-stone-800 pb-3">
+          <button id="admin-subtab-settings" type="button" class="px-3.5 py-1.5 rounded-lg bg-rose-600 text-white font-bold text-xs">
+            <i class="fa-solid fa-sliders mr-1"></i> App Settings
+          </button>
+          <button id="admin-subtab-users" type="button" class="px-3.5 py-1.5 rounded-lg bg-stone-900 text-stone-300 border border-stone-800 hover:border-rose-500 text-xs font-semibold">
+            <i class="fa-solid fa-users-gear mr-1"></i> Roles, Bans & Profiles
+          </button>
+          <button id="admin-subtab-posts" type="button" class="px-3.5 py-1.5 rounded-lg bg-stone-900 text-stone-300 border border-stone-800 hover:border-rose-500 text-xs font-semibold">
+            <i class="fa-solid fa-database mr-1"></i> All Database Posts
+          </button>
+        </div>
+
+        <!-- Admin Panel 1: App Settings (public.app_settings) -->
+        <div id="admin-panel-settings" class="clean-card p-6 space-y-5">
+          <div class="border-b border-stone-800 pb-3">
+            <h3 class="text-base font-bold text-amber-100">Global Application Configuration (<code class="text-xs text-amber-400">public.app_settings</code>)</h3>
+            <p class="text-xs text-stone-400 mt-0.5">Changes take effect immediately across the application.</p>
+          </div>
+
+          <form id="admin-settings-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- maintenance_mode -->
+              <label class="flex items-center justify-between p-4 rounded-xl bg-stone-900/80 border border-stone-800 cursor-pointer">
+                <div>
+                  <span class="block text-sm font-bold text-stone-100">Maintenance Mode</span>
+                  <span class="block text-[11px] text-stone-400">Lock out non-admin users during maintenance</span>
+                </div>
+                <input type="checkbox" id="setting-maintenance-mode" class="w-4 h-4 accent-amber-500" />
+              </label>
+
+              <!-- allow_public_posts -->
+              <label class="flex items-center justify-between p-4 rounded-xl bg-stone-900/80 border border-stone-800 cursor-pointer">
+                <div>
+                  <span class="block text-sm font-bold text-stone-100">Allow Public Posts</span>
+                  <span class="block text-[11px] text-stone-400">Enable new public community advice threads</span>
+                </div>
+                <input type="checkbox" id="setting-allow-public" class="w-4 h-4 accent-amber-500" checked />
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- max_upload_mb -->
+              <div>
+                <label class="block text-xs font-bold text-stone-300 mb-1">Max File Upload Size (MB)</label>
+                <input type="number" id="setting-max-upload-mb" min="1" max="500" value="50" class="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-2 text-sm text-stone-200 focus:outline-none focus:border-amber-500" />
+              </div>
+
+              <!-- announcement_banner -->
+              <div>
+                <label class="block text-xs font-bold text-stone-300 mb-1">Global Announcement Banner (Leave blank to hide)</label>
+                <input type="text" id="setting-announcement-banner" placeholder="e.g., Welcome to MarbleVet Journal v2!" class="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-2 text-sm text-stone-200 focus:outline-none focus:border-amber-500" />
+              </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button type="submit" class="px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs transition-all shadow">
+                <i class="fa-solid fa-floppy-disk mr-1.5"></i> Save App Settings
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Admin Panel 2: Role Governance, Bans & Profile Deletion -->
+        <div id="admin-panel-users" class="hidden space-y-4">
+          <div class="bg-stone-950/70 border border-stone-800 rounded-lg p-3 text-xs text-stone-300 flex flex-wrap items-center justify-between gap-2">
+            <span>
+              <i class="fa-solid fa-key text-amber-400 mr-1.5"></i>
+              Promote/demote <code class="text-sky-300">moderator</code> roles, ban/unban any user, delete profiles, or transfer the single <code class="text-amber-300">admin</code> slot.
+            </span>
+            <button type="button" onclick="refreshAdminData()" class="px-3 py-1 rounded bg-stone-800 hover:bg-stone-700 text-xs">
+              <i class="fa-solid fa-rotate mr-1"></i> Refresh Users
+            </button>
+          </div>
+          <div id="admin-users-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Admin Panel 3: All Database Posts (Public & Private Audit) -->
+        <div id="admin-panel-posts" class="hidden space-y-4">
+          <div class="bg-stone-950/70 border border-stone-800 rounded-lg p-3 text-xs text-stone-300">
+            <i class="fa-solid fa-eye text-rose-400 mr-1.5"></i>
+            Admin RLS grants visibility over all database posts (public & private, active, under review, or removed).
+          </div>
+          <div id="admin-posts-list" class="space-y-3"></div>
+        </div>
+      </div>
+
     </section>
 
     <!-- 4. SETTINGS SCREEN -->
@@ -239,6 +463,17 @@
           <button id="btn-close-settings" class="text-stone-400 hover:text-amber-400">
             <i class="fa-solid fa-xmark text-lg"></i>
           </button>
+        </div>
+
+        <div class="mb-6 p-3.5 rounded-lg bg-stone-900/80 border border-stone-800 text-xs space-y-1">
+          <div class="flex justify-between">
+            <span class="text-stone-400">Username:</span>
+            <span id="settings-username" class="font-bold text-amber-300"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-stone-400">Assigned Role:</span>
+            <span id="settings-role" class="font-bold uppercase text-amber-400"></span>
+          </div>
         </div>
 
         <form id="change-pass-form" class="space-y-4">
@@ -284,7 +519,7 @@
               <label class="block text-xs font-medium text-stone-300 mb-1">Visibility</label>
               <select id="post-visibility" class="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-2 text-sm text-stone-200 focus:outline-none focus:border-amber-500">
                 <option value="private">Private (Health Log)</option>
-                <option value="public">Public (Community Advice)</option>
+                <option id="option-visibility-public" value="public">Public (Community Advice)</option>
               </select>
             </div>
           </div>
@@ -295,7 +530,7 @@
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-stone-300 mb-1">Attachment (Photo, Video, Audio, or Document - Max 50MB)</label>
+            <label class="block text-xs font-medium text-stone-300 mb-1">Attachment (Photo, Video, Audio, or Document - Max <span id="label-max-upload-mb">50</span>MB)</label>
             <input type="file" id="post-file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,audio/mpeg,audio/mp3,audio/m4a,audio/wav,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/zip" class="w-full text-xs text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-600/20 file:text-amber-400 hover:file:bg-amber-600/30" />
           </div>
 
@@ -307,24 +542,30 @@
       </div>
     </div>
 
-    <!-- VIEW ENTRY DETAILED MODAL (POP-UP WITH COMMENTS) -->
+    <!-- VIEW ENTRY DETAILED MODAL (POP-UP WITH ROLE ACTIONS & COMMENTS) -->
     <div id="modal-view-post" class="hidden fixed inset-0 z-50 bg-stone-950/85 backdrop-blur-md flex items-center justify-center p-4">
       <div class="clean-card max-w-2xl w-full p-6 space-y-5 relative max-h-[90vh] overflow-y-auto">
         
         <!-- Header Top Bar: Title & User Info -->
         <div class="flex items-start justify-between border-b border-stone-800 pb-4 gap-4">
           <div>
-            <div class="flex items-center gap-2 mb-1.5">
+            <div class="flex flex-wrap items-center gap-2 mb-1.5">
               <span id="view-post-category" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"></span>
+              <span id="view-post-status-badge" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded border"></span>
               <span id="view-post-author" class="text-xs font-bold text-amber-300"></span>
               <span class="text-stone-600">•</span>
               <span id="view-post-date" class="text-xs text-stone-500"></span>
             </div>
             <h2 id="view-post-title" class="text-xl font-bold text-amber-50"></h2>
           </div>
-          <button id="btn-close-view-modal" class="text-stone-400 hover:text-amber-400 text-lg p-1">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+          <div class="flex items-center gap-2">
+            <button id="btn-delete-post-modal" type="button" class="hidden px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-semibold">
+              <i class="fa-solid fa-trash mr-1"></i> Delete
+            </button>
+            <button id="btn-close-view-modal" class="text-stone-400 hover:text-amber-400 text-lg p-1">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
         </div>
 
         <!-- Centered Attachment Showcase Container -->
@@ -336,6 +577,26 @@
         <div class="space-y-1.5 pt-1">
           <h4 class="text-xs font-bold text-amber-500 uppercase tracking-wider">Description & Details</h4>
           <p id="view-post-content" class="text-sm text-stone-200 leading-relaxed whitespace-pre-wrap bg-stone-900/50 p-4 rounded-lg border border-stone-800/80"></p>
+        </div>
+
+        <!-- Moderator / Admin Quick Review Controls inside Post Modal -->
+        <div id="view-post-mod-controls" class="hidden bg-sky-950/30 border border-sky-800/60 rounded-xl p-4 space-y-3">
+          <h4 class="text-xs font-bold text-sky-300 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-gavel"></i> Moderation Controls
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <select id="modal-mod-status" class="bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1.5 text-xs text-stone-200">
+              <option value="active">Status: Active</option>
+              <option value="under_review">Status: Under Review</option>
+              <option value="removed">Status: Removed</option>
+            </select>
+            <input type="text" id="modal-mod-notes" placeholder="Review notes (optional)..." class="sm:col-span-2 bg-stone-900 border border-stone-700 rounded-lg px-3 py-1.5 text-xs text-stone-200" />
+          </div>
+          <div class="flex justify-end">
+            <button id="btn-save-modal-mod" type="button" class="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-stone-950 font-bold text-xs">
+              Save Review Status
+            </button>
+          </div>
         </div>
 
         <!-- Replies & Community Discussion Section -->
@@ -365,23 +626,19 @@
     <div id="modal-privacy" class="hidden fixed inset-0 z-[60] bg-stone-950/90 backdrop-blur-md flex items-center justify-center p-4">
       <div class="clean-card max-w-2xl w-full p-6 space-y-4 relative max-h-[90vh] flex flex-col">
         
-        <!-- Really small "no" button in the top-left corner (shown during first-time sign-in) -->
         <button id="btn-privacy-no" type="button" class="hidden absolute top-2.5 left-3 text-[9px] text-stone-500 hover:text-rose-400 underline tracking-tight px-1 py-0.5">
           no
         </button>
 
-        <!-- Close button (shown only when viewing manually via top-right Privacy button) -->
         <button id="btn-close-privacy" type="button" class="absolute top-4 right-4 text-stone-400 hover:text-amber-400 text-base">
           <i class="fa-solid fa-xmark"></i>
         </button>
 
-        <!-- Modal Header -->
         <div class="border-b border-stone-800 pb-3 pt-2 text-center">
           <h2 class="text-xl font-bold text-amber-100">Privacy Policy for MarbleVet Journal</h2>
           <p class="text-[11px] text-stone-400 mt-0.5">Effective Date: November 10, 2026 &nbsp;|&nbsp; App: MarbleVet Journal</p>
         </div>
 
-        <!-- Scrollable Policy Body -->
         <div class="overflow-y-auto pr-2 space-y-4 text-xs text-stone-300 leading-relaxed flex-1">
           <div>
             <h3 class="font-bold text-amber-400 text-sm mb-1">1. Introduction and Overview</h3>
@@ -431,7 +688,6 @@
           </div>
         </div>
 
-        <!-- First-Time Sign-In Action Buttons -->
         <div id="privacy-consent-actions" class="hidden border-t border-stone-800 pt-4 flex flex-col sm:flex-row gap-3 justify-end">
           <button id="btn-privacy-accept-no-ack" type="button" class="px-4 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 font-semibold text-xs transition-all">
             Accept with No Acknowledgment
