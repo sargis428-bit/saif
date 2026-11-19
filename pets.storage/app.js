@@ -35,7 +35,6 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'mov', 'mp3', 'm4a', 'wav', 'pdf', 'docx', 'doc', 'zip'];
-const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB default
 
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
@@ -472,7 +471,7 @@ async function handleGitHubAuth() {
 }
 
 // ============================================================================
-// PROFILE FETCHING & ROLE SCREEN ROUTING
+// PROFILE FETCHING & UNIQUE ROLE SCREEN ROUTING
 // ============================================================================
 function getCurrentRole() {
   return currentProfile?.role || 'user';
@@ -538,6 +537,7 @@ function configureRoleWorkspace(profile) {
     badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-amber-950/80 text-amber-300 border-amber-700/50';
   }
 
+  // Banned Lockout Screen
   if (profile.is_banned) {
     document.getElementById('banned-username').innerText = `@${profile.username}`;
     document.getElementById('banned-meta').innerText = profile.banned_at
@@ -547,6 +547,7 @@ function configureRoleWorkspace(profile) {
     return;
   }
 
+  // Maintenance Lockout Screen (Non-Admins only)
   if (appSettings.maintenance_mode === true && role !== 'admin') {
     showScreen('maintenance');
     return;
@@ -568,14 +569,15 @@ function configureRoleWorkspace(profile) {
   }
 
   showScreen('app');
-  switchAppTab('log');
   renderPosts();
 
-  if (role === 'moderator' || role === 'admin') {
-    refreshModerationData();
-  }
+  // Route each role directly to its unique primary workspace screen
   if (role === 'admin') {
-    refreshAdminData();
+    switchAppTab('admin');
+  } else if (role === 'moderator') {
+    switchAppTab('moderator');
+  } else {
+    switchAppTab('log');
   }
 }
 
@@ -704,7 +706,7 @@ function switchAdminSubtab(sub) {
 }
 
 // ============================================================================
-// FILE UPLOADS & POST CREATION (RESTORED WORKING PIPELINE)
+// FILE UPLOADS & POST CREATION
 // ============================================================================
 async function uploadFileToStorage(file) {
   if (!supabaseClient) {
@@ -782,12 +784,13 @@ async function handleCreatePost(e) {
     content,
     category,
     visibility,
+    status: 'active',
     file_url,
     created_at: new Date().toISOString()
   };
 
   if (supabaseClient) {
-    const { data, error } = await supabaseClient.from('posts').insert([newPost]).select();
+    const { error } = await supabaseClient.from('posts').insert([newPost]).select();
     if (error) {
       return showToast(error.message, 'error');
     }
@@ -803,6 +806,7 @@ async function handleCreatePost(e) {
   showToast('Entry created!', 'success');
   await renderPosts();
   if (getCurrentRole() !== 'user') await refreshModerationData();
+  if (getCurrentRole() === 'admin') await refreshAdminData();
 }
 
 function readFileAsDataURL(file) {
@@ -1251,19 +1255,28 @@ function renderModeratorUsers() {
 }
 
 async function toggleUserBan(targetUserId, banState) {
+  const targetUser = allProfiles.find(u => u.id === targetUserId);
+  if (getCurrentRole() === 'moderator' && targetUser && (targetUser.role || 'user') !== 'user') {
+    return showToast('Moderators can only ban or unban standard user accounts.', 'error');
+  }
+
+  const updatePayload = {
+    is_banned: banState,
+    banned_at: banState ? new Date().toISOString() : null,
+    banned_by: banState ? currentUser.id : null
+  };
+
   if (supabaseClient) {
     const { error } = await supabaseClient
       .from('profiles')
-      .update({ is_banned: banState })
+      .update(updatePayload)
       .eq('id', targetUserId);
 
     if (error) return showToast(error.message, 'error');
   } else {
     const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PROFILES_KEY) || '{}');
     if (profiles[targetUserId]) {
-      profiles[targetUserId].is_banned = banState;
-      profiles[targetUserId].banned_at = banState ? new Date().toISOString() : null;
-      profiles[targetUserId].banned_by = banState ? currentUser.id : null;
+      profiles[targetUserId] = { ...profiles[targetUserId], ...updatePayload };
       localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY, JSON.stringify(profiles));
     }
   }
@@ -1356,4 +1369,197 @@ async function handleAdminChangeRole(targetUserId, newRole) {
     const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PROFILES_KEY) || '{}');
     if (profiles[targetUserId]) {
       profiles[targetUserId].role = newRole;
-      localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY,
+      localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY, JSON.stringify(profiles));
+    }
+  }
+
+  showToast(`User role updated to "${newRole}".`, 'success');
+  await refreshAdminData();
+}
+
+async function handleTransferAdminSlot(targetUserId, targetUsername) {
+  if (getCurrentRole() !== 'admin') return;
+  if (!confirm(`Transfer the single Admin slot to @${targetUsername}? You will be demoted to Moderator.`)) return;
+
+  if (supabaseClient) {
+    const { error: promoteErr } = await supabaseClient
+      .from('profiles')
+      .update({ role: 'admin', is_banned: false })
+      .eq('id', targetUserId);
+    if (promoteErr) return showToast(promoteErr.message, 'error');
+
+    const { error: demoteErr } = await supabaseClient
+      .from('profiles')
+      .update({ role: 'moderator' })
+      .eq('id', currentUser.id);
+    if (demoteErr) return showToast(demoteErr.message, 'error');
+  } else {
+    const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PROFILES_KEY) || '{}');
+    if (profiles[targetUserId]) {
+      profiles[targetUserId].role = 'admin';
+      profiles[targetUserId].is_banned = false;
+    }
+    if (profiles[currentUser.id]) {
+      profiles[currentUser.id].role = 'moderator';
+    }
+    localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY, JSON.stringify(profiles));
+  }
+
+  showToast(`Admin slot transferred to @${targetUsername}.`, 'success');
+  await fetchProfile(currentUser.id);
+}
+
+async function handleAdminDeleteProfile(targetUserId, targetUsername) {
+  if (getCurrentRole() !== 'admin') return;
+  if (!confirm(`Permanently delete profile @${targetUsername}? This cannot be undone.`)) return;
+
+  if (supabaseClient) {
+    const { error } = await supabaseClient
+      .from('profiles')
+      .delete()
+      .eq('id', targetUserId);
+    if (error) return showToast(error.message, 'error');
+  } else {
+    const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PROFILES_KEY) || '{}');
+    delete profiles[targetUserId];
+    localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY, JSON.stringify(profiles));
+  }
+
+  showToast(`Profile @${targetUsername} deleted.`, 'success');
+  await refreshAdminData();
+}
+
+function renderAdminPosts() {
+  const container = document.getElementById('admin-posts-list');
+  if (loadedPosts.length === 0) {
+    container.innerHTML = `<div class="clean-card p-6 text-center text-xs text-stone-400">No posts in database.</div>`;
+    return;
+  }
+
+  container.innerHTML = loadedPosts.map(p => {
+    const status = p.status || 'active';
+    const isPrivate = p.visibility === 'private';
+
+    return `
+      <div class="clean-card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1 flex-1">
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+              isPrivate ? 'bg-purple-950/80 text-purple-300 border-purple-700/60' : 'bg-amber-950/80 text-amber-300 border-amber-700/60'
+            }">${escapeHtml(p.visibility)}</span>
+            <span class="${getStatusBadgeClass(status)} text-[10px] font-bold uppercase px-2 py-0.5 rounded border">${status.replace('_', ' ')}</span>
+            <span class="font-bold text-amber-300">@${escapeHtml(p.author_username || 'anonymous')}</span>
+            <span class="text-stone-500">• ${escapeHtml(p.category)} • ${new Date(p.created_at).toLocaleDateString()}</span>
+          </div>
+          <h4 class="font-bold text-amber-100 text-sm">${escapeHtml(p.title)}</h4>
+          <p class="text-xs text-stone-400 line-clamp-2">${escapeHtml(p.content)}</p>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" onclick="openPostModal('${p.id}')" class="px-3 py-1.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold">
+            Inspect
+          </button>
+          <button type="button" onclick="handleDeletePost('${p.id}')" class="px-3 py-1.5 rounded bg-rose-900/80 hover:bg-rose-800 text-rose-200 text-xs font-semibold">
+            <i class="fa-solid fa-trash mr-1"></i> Delete
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================================
+// MEDIA RENDERING & UI HELPERS
+// ============================================================================
+function getStatusBadgeClass(status) {
+  if (status === 'under_review') {
+    return 'bg-amber-950/90 text-amber-300 border-amber-600/60';
+  }
+  if (status === 'removed') {
+    return 'bg-rose-950/90 text-rose-300 border-rose-600/60';
+  }
+  return 'bg-emerald-950/90 text-emerald-300 border-emerald-600/60';
+}
+
+function renderThumbnailBox(fileUrl) {
+  if (!fileUrl) return '';
+  const lower = fileUrl.toLowerCase();
+
+  if (lower.startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif)(\?|$)/.test(lower)) {
+    return `
+      <div class="w-full h-36 rounded-lg overflow-hidden bg-stone-950 border border-stone-800 flex items-center justify-center">
+        <img src="${fileUrl}" alt="Attachment" class="w-full h-full object-cover" />
+      </div>`;
+  }
+  if (lower.startsWith('data:video') || /\.(mp4|mov)(\?|$)/.test(lower)) {
+    return `
+      <div class="w-full h-36 rounded-lg bg-stone-950 border border-stone-800 flex flex-col items-center justify-center text-amber-400 gap-1.5">
+        <i class="fa-solid fa-film text-2xl"></i>
+        <span class="text-[11px] font-semibold">Video Attachment</span>
+      </div>`;
+  }
+  if (lower.startsWith('data:audio') || /\.(mp3|m4a|wav)(\?|$)/.test(lower)) {
+    return `
+      <div class="w-full h-36 rounded-lg bg-stone-950 border border-stone-800 flex flex-col items-center justify-center text-amber-400 gap-1.5">
+        <i class="fa-solid fa-waveform-lines fa-volume-high text-2xl"></i>
+        <span class="text-[11px] font-semibold">Audio Recording</span>
+      </div>`;
+  }
+  return `
+    <div class="w-full h-36 rounded-lg bg-stone-950 border border-stone-800 flex flex-col items-center justify-center text-amber-400 gap-1.5">
+      <i class="fa-solid fa-file-lines text-2xl"></i>
+      <span class="text-[11px] font-semibold">Document Attachment</span>
+    </div>`;
+}
+
+function renderCenteredMedia(fileUrl) {
+  if (!fileUrl) return '';
+  const lower = fileUrl.toLowerCase();
+
+  if (lower.startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif)(\?|$)/.test(lower)) {
+    return `<img src="${fileUrl}" alt="Attachment preview" class="max-h-96 rounded-lg object-contain" />`;
+  }
+  if (lower.startsWith('data:video') || /\.(mp4|mov)(\?|$)/.test(lower)) {
+    return `<video src="${fileUrl}" controls class="max-h-96 w-full rounded-lg"></video>`;
+  }
+  if (lower.startsWith('data:audio') || /\.(mp3|m4a|wav)(\?|$)/.test(lower)) {
+    return `<audio src="${fileUrl}" controls class="w-full"></audio>`;
+  }
+  return `
+    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs flex items-center gap-2">
+      <i class="fa-solid fa-download"></i> Open / Download Attached File
+    </a>`;
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.getElementById('toast');
+  const msgEl = document.getElementById('toast-message');
+  if (!toast || !msgEl) return;
+
+  msgEl.innerText = message;
+  toast.className = 'fixed bottom-5 right-5 z-50 px-5 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-3 transition-all duration-300 border';
+
+  if (type === 'error') {
+    toast.classList.add('bg-rose-950', 'text-rose-200', 'border-rose-700');
+  } else if (type === 'success') {
+    toast.classList.add('bg-emerald-950', 'text-emerald-200', 'border-emerald-700');
+  } else {
+    toast.classList.add('bg-stone-900', 'text-amber-200', 'border-amber-700/60');
+  }
+
+  toast.classList.remove('hidden');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 3500);
+}
