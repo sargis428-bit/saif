@@ -1287,7 +1287,7 @@ async function toggleUserBan(targetUserId, banState) {
 }
 
 // ============================================================================
-// ADMIN CONSOLE DATA & GOVERNANCE ACTIONS (SINGLE ADMIN SLOT)
+// ADMIN CONSOLE DATA & GOVERNANCE ACTIONS
 // ============================================================================
 async function refreshAdminData() {
   if (getCurrentRole() !== 'admin') return;
@@ -1333,10 +1333,6 @@ function renderAdminUsers() {
               <option value="moderator" ${role === 'moderator' ? 'selected' : ''}>Role: Moderator</option>
             </select>
 
-            <button type="button" onclick="handleTransferAdminSlot('${u.id}', '${escapeHtml(u.username)}')" class="px-3 py-1.5 rounded bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/40 text-xs font-semibold" title="Transfer single admin slot">
-              <i class="fa-solid fa-crown mr-1"></i> Make Admin
-            </button>
-
             <button type="button" onclick="toggleUserBan('${u.id}', ${!u.is_banned})" class="px-3 py-1.5 rounded text-xs font-bold ${u.is_banned ? 'bg-emerald-600 hover:bg-emerald-500 text-stone-950' : 'bg-rose-700 hover:bg-rose-600 text-white'}">
               ${u.is_banned ? 'Unban' : 'Ban'}
             </button>
@@ -1345,7 +1341,7 @@ function renderAdminUsers() {
               <i class="fa-solid fa-trash"></i>
             </button>
           ` : `
-            <span class="text-xs text-stone-400 italic">Transfer Admin slot to another user before demoting self.</span>
+            <span class="text-xs text-stone-400 italic">System Administrator</span>
           `}
         </div>
       </div>
@@ -1355,6 +1351,9 @@ function renderAdminUsers() {
 
 async function handleAdminChangeRole(targetUserId, newRole) {
   if (getCurrentRole() !== 'admin') return;
+  if (newRole !== 'user' && newRole !== 'moderator') {
+    return showToast('Invalid role selection.', 'error');
+  }
 
   if (supabaseClient) {
     const { error } = await supabaseClient
@@ -1375,38 +1374,6 @@ async function handleAdminChangeRole(targetUserId, newRole) {
 
   showToast(`User role updated to "${newRole}".`, 'success');
   await refreshAdminData();
-}
-
-async function handleTransferAdminSlot(targetUserId, targetUsername) {
-  if (getCurrentRole() !== 'admin') return;
-  if (!confirm(`Transfer the single Admin slot to @${targetUsername}? You will be demoted to Moderator.`)) return;
-
-  if (supabaseClient) {
-    const { error: promoteErr } = await supabaseClient
-      .from('profiles')
-      .update({ role: 'admin', is_banned: false })
-      .eq('id', targetUserId);
-    if (promoteErr) return showToast(promoteErr.message, 'error');
-
-    const { error: demoteErr } = await supabaseClient
-      .from('profiles')
-      .update({ role: 'moderator' })
-      .eq('id', currentUser.id);
-    if (demoteErr) return showToast(demoteErr.message, 'error');
-  } else {
-    const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_PROFILES_KEY) || '{}');
-    if (profiles[targetUserId]) {
-      profiles[targetUserId].role = 'admin';
-      profiles[targetUserId].is_banned = false;
-    }
-    if (profiles[currentUser.id]) {
-      profiles[currentUser.id].role = 'moderator';
-    }
-    localStorage.setItem(LOCAL_STORAGE_PROFILES_KEY, JSON.stringify(profiles));
-  }
-
-  showToast(`Admin slot transferred to @${targetUsername}.`, 'success');
-  await fetchProfile(currentUser.id);
 }
 
 async function handleAdminDeleteProfile(targetUserId, targetUsername) {
